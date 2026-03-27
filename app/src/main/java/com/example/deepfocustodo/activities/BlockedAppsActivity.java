@@ -1,17 +1,40 @@
 package com.example.deepfocustodo.activities;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.deepfocustodo.R;
+import com.example.deepfocustodo.adapters.AppListAdapter;
+import com.example.deepfocustodo.models.AppItem;
+import com.example.deepfocustodo.services.BlockerService;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BlockedAppsActivity extends AppCompatActivity {
 
     private ImageButton btnBack;
-    private TextView tvInfo;
+    private Button btnBlockPermission;
+    private RecyclerView rvAppsList;
+    private AppListAdapter adapter;
+
+    // Nơi lưu trữ trạng thái các app bị chặn
+    private SharedPreferences sharedPreferences;
+    private static final String PREFS_NAME = "BlockedAppsPrefs";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,9 +42,74 @@ public class BlockedAppsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_blocked_apps);
 
         btnBack = findViewById(R.id.btnBackBlockedApps);
-        tvInfo = findViewById(R.id.tvBlockedAppsInfo);
+        btnBlockPermission = findViewById(R.id.btnBlockPermission);
+        rvAppsList = findViewById(R.id.rvAppsList);
 
-        tvInfo.setText("Người thứ 4 sẽ làm");
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+        // Nút Quay lại
         btnBack.setOnClickListener(v -> finish());
+
+        // Nút chuyển đến màn hình cấp quyền
+        btnBlockPermission.setOnClickListener(v -> {
+            Intent intent = new Intent(BlockedAppsActivity.this, BlockPermissionActivity.class);
+            startActivity(intent);
+        });
+
+        setupRecyclerView();
+        loadInstalledApps();
+
+        // Chạy BlockerService
+        startService(new Intent(this, BlockerService.class));
+    }
+
+    private void setupRecyclerView() {
+        rvAppsList.setLayoutManager(new LinearLayoutManager(this));
+
+        // Khi người dùng gạt Switch, lưu vào SharedPreferences
+        adapter = new AppListAdapter((packageName, isBlocked) -> {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean(packageName, isBlocked);
+            editor.apply();
+        });
+
+        rvAppsList.setAdapter(adapter);
+    }
+
+    private void loadInstalledApps() {
+        // Sử dụng Background Thread (Executor) để tránh làm lag màn hình UI khi tải icon app
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            PackageManager pm = getPackageManager();
+            Intent intent = new Intent(Intent.ACTION_MAIN, null);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+            List<ResolveInfo> resolveInfoList = pm.queryIntentActivities(intent, 0);
+
+            // Sắp xếp theo tên ứng dụng A-Z
+            Collections.sort(resolveInfoList, new ResolveInfo.DisplayNameComparator(pm));
+
+            List<AppItem> installedApps = new ArrayList<>();
+
+            for (ResolveInfo resolveInfo : resolveInfoList) {
+                String packageName = resolveInfo.activityInfo.packageName;
+
+                // Bỏ qua chính ứng dụng của bạn
+                if (packageName.equals(getPackageName())) {
+                    continue;
+                }
+
+                String appName = resolveInfo.loadLabel(pm).toString();
+                Drawable icon = resolveInfo.loadIcon(pm);
+
+                // Lấy trạng thái đã bị block từ trước đó
+                boolean isBlocked = sharedPreferences.getBoolean(packageName, false);
+
+                installedApps.add(new AppItem(appName, packageName, icon, isBlocked));
+            }
+
+            // Đưa dữ liệu lên UI Thread để cập nhật giao diện
+            runOnUiThread(() -> adapter.setAppList(installedApps));
+        });
     }
 }

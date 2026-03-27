@@ -29,7 +29,7 @@ public class SettingsFragment extends Fragment {
     private PreferenceHelper preferenceHelper;
 
     public SettingsFragment() {
-        // Required empty public constructor
+
     }
 
     @Nullable
