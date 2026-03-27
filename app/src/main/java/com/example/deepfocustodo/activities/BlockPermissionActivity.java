@@ -37,21 +37,13 @@ public class BlockPermissionActivity extends AppCompatActivity {
         btnBlockApp.setOnClickListener(v -> finish());
 
         btnUsagePermission.setOnClickListener(v -> {
-            if (!hasUsageStatsPermission()) {
-                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-            } else {
-                Toast.makeText(this, "Usage Access đã được cấp", Toast.LENGTH_SHORT).show();
-            }
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
         });
 
         btnOverlayPermission.setOnClickListener(v -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "Overlay Permission đã được cấp", Toast.LENGTH_SHORT).show();
-            }
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
         });
     }
 
