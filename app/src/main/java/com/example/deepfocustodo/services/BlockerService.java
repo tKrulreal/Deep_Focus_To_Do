@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+// Change into Foreground Service to stop close app
 public class BlockerService extends Service {
 
     // Handler dùng để chạy lặp lại việc kiểm tra app mỗi 1 giây
