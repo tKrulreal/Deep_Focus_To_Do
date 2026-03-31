@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.database.AppDatabase;
 import com.example.deepfocustodo.models.DailyStats;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 import java.util.Calendar;
 import java.util.Collections;
@@ -32,13 +34,17 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
     private static final String BLOCK_PREFS = "BlockedAppsPrefs";
     private static final String KEY_BLOCKED_ATTEMPTS = "blocked_attempt_count";
 
+    private MaterialButtonToggleGroup toggleGroup;
+    private LinearLayout layoutNavigation;
     private TextView tvTotalFocusMinutes;
     private TextView tvCompletedSessions;
     private TextView tvTotalPoints;
+    private TextView tvBadge;
     private TextView tvStreak;
     private TextView tvTodayUsage;
     private TextView tvBlockedAttempts;
     private TextView tvDailyChart;
+
 
     private AppDatabase db;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -57,9 +63,27 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        toggleGroup = view.findViewById(R.id.toggleGroup);
+
+        layoutNavigation = view.findViewById(R.id.layoutNavigation);
+
+        toggleGroup.addOnButtonCheckedListener(
+                (group, checkedId, isChecked) -> {
+
+                    if (!isChecked) return;
+
+                    if (checkedId == R.id.btnDay) {
+                        layoutNavigation.setVisibility(View.VISIBLE);
+                    }
+                    else if (checkedId == R.id.btnTotal) {
+                        layoutNavigation.setVisibility(View.GONE);
+                    }
+                });
+
         tvTotalFocusMinutes = view.findViewById(R.id.tvTotalFocusMinutes);
         tvCompletedSessions = view.findViewById(R.id.tvCompletedSessions);
         tvTotalPoints = view.findViewById(R.id.tvTotalPoints);
+        tvBadge = view.findViewById(R.id.tvBadge);
         tvStreak = view.findViewById(R.id.tvStreak);
         tvTodayUsage = view.findViewById(R.id.tvTodayUsage);
         tvBlockedAttempts = view.findViewById(R.id.tvBlockedAttempts);
@@ -103,12 +127,13 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
             }
 
             requireActivity().runOnUiThread(() -> {
-                tvTotalFocusMinutes.setText("Tổng phút tập trung: " + (totalFocus == null ? 0 : totalFocus));
-                tvCompletedSessions.setText("Tổng phiên hoàn thành: " + completedSessions);
-                tvTotalPoints.setText("Tổng điểm: " + safeTotalPoints);
-                tvStreak.setText("Streak: " + streakDays + " ngày | Badge: " + badge);
-                tvTodayUsage.setText("Thời gian dùng app khác hôm nay: " + usageMinutes + " phút");
-                tvBlockedAttempts.setText("Số lần mở app bị chặn: " + blockedAttempts);
+                tvTotalFocusMinutes.setText((totalFocus == null ? 0 : totalFocus) + " phút");
+                tvCompletedSessions.setText(completedSessions + " phiên");
+                tvTotalPoints.setText(safeTotalPoints + " điểm");
+                tvBadge.setText(badge);
+                tvStreak.setText(streakDays + " ngày liên tiếp");
+                tvTodayUsage.setText(usageMinutes + " phút");
+                tvBlockedAttempts.setText(blockedAttempts + " lần");
                 tvDailyChart.setText(chart);
             });
         });

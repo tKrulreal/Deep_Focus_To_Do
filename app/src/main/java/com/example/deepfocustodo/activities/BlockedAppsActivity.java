@@ -4,10 +4,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.adapters.AppListAdapter;
 import com.example.deepfocustodo.models.AppItem;
+import com.example.deepfocustodo.utils.PermissionHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +33,8 @@ public class BlockedAppsActivity extends AppCompatActivity {
     private RecyclerView rvAppsList;
     private AppListAdapter adapter;
 
+    private TextView tvBlockedAppsInfo;
+
     // Nơi lưu trữ trạng thái các app bị chặn
     private SharedPreferences sharedPreferences;
     private static final String PREFS_NAME = "BlockedAppsPrefs";
@@ -42,6 +47,7 @@ public class BlockedAppsActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBackBlockedApps);
         btnBlockPermission = findViewById(R.id.btnBlockPermission);
         rvAppsList = findViewById(R.id.rvAppsList);
+        tvBlockedAppsInfo = findViewById(R.id.tvBlockedAppsInfo);
 
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
@@ -107,5 +113,23 @@ public class BlockedAppsActivity extends AppCompatActivity {
             // Đưa dữ liệu lên UI Thread để cập nhật giao diện
             runOnUiThread(() -> adapter.setAppList(installedApps));
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkAndRefreshStatus();
+    }
+
+    private void checkAndRefreshStatus() {
+        if (PermissionHelper.isAllPermissionsGranted(this)) {
+            // Khi ĐÃ có đủ quyền
+            tvBlockedAppsInfo.setText("✅ Ứng dụng đã sẵn sàng hoạt động");
+            tvBlockedAppsInfo.setTextColor(Color.parseColor("#4CAF50")); // Màu xanh lá
+        } else {
+            // Khi CHƯA có đủ quyền
+            tvBlockedAppsInfo.setText("⚠️ Cần cấp quyền để bắt đầu chặn ứng dụng");
+            tvBlockedAppsInfo.setTextColor(Color.parseColor("#F44336")); // Màu đỏ
+        }
     }
 }

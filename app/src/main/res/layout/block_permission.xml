@@ -1,27 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="20dp">
+    android:fillViewport="true">
 
-    <Button
-        android:id="@+id/btnUsagePermission"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1. Cấp quyền truy cập sử dụng" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <Button
-        android:id="@+id/btnOverlayPermission"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="2. Cấp quyền hiển thị trên ứng dụng khác" />
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thiết lập chặn ứng dụng"
+            android:textSize="24sp"
+            android:textStyle="bold"/>
 
-    <Button
-        android:id="@+id/btnBlockApp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Trở về chọn ứng dụng để chặn" />
-</LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ứng dụng cần một vài quyền để có thể chặn app gây xao nhãng."
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:textColor="#666"/>
+
+        <!-- STEP 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="24dp"
+            android:background="@android:color/white"
+            android:elevation="2dp"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bước 1"
+                android:textStyle="bold"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Cấp quyền truy cập sử dụng"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp"/>
+
+            <!-- TextView hiển thị trạng thái Bước 1 -->
+            <TextView
+                android:id="@+id/tvUsageStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trạng thái: Chưa cấp"
+                android:textColor="#F44336"
+                android:textStyle="italic"
+                android:layout_marginTop="4dp"/>
+
+            <Button
+                android:id="@+id/btnUsagePermission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Chỉnh quyền"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+
+        <!-- STEP 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:background="@android:color/white"
+            android:elevation="2dp"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bước 2"
+                android:textStyle="bold"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Cho phép hiển thị trên ứng dụng khác"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp"/>
+
+            <!-- TextView hiển thị trạng thái Bước 2 -->
+            <TextView
+                android:id="@+id/tvOverlayStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trạng thái: Chưa cấp"
+                android:textColor="#F44336"
+                android:textStyle="italic"
+                android:layout_marginTop="4dp"/>
+
+            <Button
+                android:id="@+id/btnOverlayPermission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Chỉnh quyền"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+
+        <!-- CONTINUE BUTTON -->
+        <Button
+            android:id="@+id/btnBlockApp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tiếp tục chọn ứng dụng để chặn"
+            android:layout_marginTop="28dp"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white"/>
+
+    </LinearLayout>
+
+</ScrollView>

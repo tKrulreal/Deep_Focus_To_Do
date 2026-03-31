@@ -33,6 +33,7 @@
         android:id="@+id/btnBlockPermission"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="Cấp quyền cho ứng dụng" />
 
     <!-- Thêm RecyclerView để hiển thị danh sách App -->
