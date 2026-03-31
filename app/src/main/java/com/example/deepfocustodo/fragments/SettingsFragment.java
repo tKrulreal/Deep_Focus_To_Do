@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,13 +16,18 @@ import androidx.fragment.app.Fragment;
 
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.activities.BlockedAppsActivity;
+import com.example.deepfocustodo.services.PomodoroService;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.google.android.material.textfield.TextInputEditText;
 
-public class SettingsFragment extends Fragment {
+public class SettingsFragment extends Fragment implements TabRefreshable {
+
+    private static final int MIN_MINUTES = 1;
+    private static final int MAX_MINUTES = 180;
 
     private TextInputEditText edtFocusTime;
     private TextInputEditText edtBreakTime;
+    private TextInputEditText edtLongBreakTime;
     private SwitchCompat switchMusic;
     private Button btnSaveSettings;
     private Button btnOpenBlockedApps;
@@ -29,7 +35,7 @@ public class SettingsFragment extends Fragment {
     private PreferenceHelper preferenceHelper;
 
     public SettingsFragment() {
-        // Required empty public constructor
+
     }
 
     @Nullable
@@ -45,6 +51,7 @@ public class SettingsFragment extends Fragment {
 
         edtFocusTime = view.findViewById(R.id.edtFocusTime);
         edtBreakTime = view.findViewById(R.id.edtBreakTime);
+        edtLongBreakTime = view.findViewById(R.id.edtLongBreakTime);
         switchMusic = view.findViewById(R.id.switchMusic);
         btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
         btnOpenBlockedApps = view.findViewById(R.id.btnOpenBlockedApps);
@@ -61,24 +68,70 @@ public class SettingsFragment extends Fragment {
         });
     }
 
+    @Override
+    public void onTabSelected() {
+        if (!isAdded() || getView() == null) {
+            return;
+        }
+        loadSavedSettings();
+    }
+
     private void loadSavedSettings() {
         edtFocusTime.setText(String.valueOf(preferenceHelper.getFocusTime()));
         edtBreakTime.setText(String.valueOf(preferenceHelper.getBreakTime()));
+        edtLongBreakTime.setText(String.valueOf(preferenceHelper.getLongBreakTime()));
         switchMusic.setChecked(preferenceHelper.isMusicEnabled());
     }
 
     private void saveSettings() {
         String focusText = edtFocusTime.getText() != null ? edtFocusTime.getText().toString().trim() : "";
         String breakText = edtBreakTime.getText() != null ? edtBreakTime.getText().toString().trim() : "";
+        String longBreakText = edtLongBreakTime.getText() != null ? edtLongBreakTime.getText().toString().trim() : "";
 
-        if (!TextUtils.isEmpty(focusText)) {
-            preferenceHelper.setFocusTime(Integer.parseInt(focusText));
+        if (TextUtils.isEmpty(focusText) || TextUtils.isEmpty(breakText) || TextUtils.isEmpty(longBreakText)) {
+            Toast.makeText(requireContext(), "Vui long nhap day du thoi gian", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        if (!TextUtils.isEmpty(breakText)) {
-            preferenceHelper.setBreakTime(Integer.parseInt(breakText));
+        int focusMinutes;
+        int breakMinutes;
+        int longBreakMinutes;
+
+        try {
+            focusMinutes = Integer.parseInt(focusText);
+            breakMinutes = Integer.parseInt(breakText);
+            longBreakMinutes = Integer.parseInt(longBreakText);
+        } catch (NumberFormatException exception) {
+            Toast.makeText(requireContext(), "Gia tri thoi gian khong hop le", Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        if (!isValidMinutes(focusMinutes) || !isValidMinutes(breakMinutes) || !isValidMinutes(longBreakMinutes)) {
+            Toast.makeText(requireContext(), "Thoi gian hop le tu 1 den 180 phut", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        preferenceHelper.setFocusTime(focusMinutes);
+        preferenceHelper.setBreakTime(breakMinutes);
+        preferenceHelper.setLongBreakTime(longBreakMinutes);
         preferenceHelper.setMusicEnabled(switchMusic.isChecked());
+
+        syncPomodoroServiceWithLatestSettings();
+        Toast.makeText(requireContext(), "Da luu cai dat", Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean isValidMinutes(int minutes) {
+        return minutes >= MIN_MINUTES && minutes <= MAX_MINUTES;
+    }
+
+    private void syncPomodoroServiceWithLatestSettings() {
+        PomodoroService.TimerState state = PomodoroService.readState(requireContext());
+        if (!state.isRunning && !state.sessionInProgress) {
+            return;
+        }
+
+        Intent intent = new Intent(requireContext(), PomodoroService.class);
+        intent.setAction(PomodoroService.ACTION_APPLY_SETTINGS);
+        requireContext().startService(intent);
     }
 }

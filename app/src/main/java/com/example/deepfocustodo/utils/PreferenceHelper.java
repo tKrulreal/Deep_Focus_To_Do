@@ -8,7 +8,9 @@ public class PreferenceHelper {
     private static final String PREF_NAME = "focusflow_prefs";
     private static final String KEY_FOCUS_TIME = "focus_time";
     private static final String KEY_BREAK_TIME = "break_time";
+    private static final String KEY_LONG_BREAK_TIME = "long_break_time";
     private static final String KEY_MUSIC_ENABLED = "music_enabled";
+    private static final String KEY_FOCUS_ACTIVE = "focus_active";
 
     private final SharedPreferences sharedPreferences;
 
@@ -32,11 +34,27 @@ public class PreferenceHelper {
         return sharedPreferences.getInt(KEY_BREAK_TIME, 5);
     }
 
+    public void setLongBreakTime(int minutes) {
+        sharedPreferences.edit().putInt(KEY_LONG_BREAK_TIME, minutes).apply();
+    }
+
+    public int getLongBreakTime() {
+        return sharedPreferences.getInt(KEY_LONG_BREAK_TIME, 15);
+    }
+
     public void setMusicEnabled(boolean enabled) {
         sharedPreferences.edit().putBoolean(KEY_MUSIC_ENABLED, enabled).apply();
     }
 
     public boolean isMusicEnabled() {
         return sharedPreferences.getBoolean(KEY_MUSIC_ENABLED, false);
+    }
+
+    public void setFocusActive(boolean active) {
+        sharedPreferences.edit().putBoolean(KEY_FOCUS_ACTIVE, active).apply();
+    }
+
+    public boolean isFocusActive() {
+        return sharedPreferences.getBoolean(KEY_FOCUS_ACTIVE, false);
     }
 }
