@@ -9,9 +9,10 @@
     <!-- Icon -->
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="409dp"
+        android:layout_width="wrap_content"
         android:layout_height="248dp"
-        android:src="@drawable/oblivion_guard2"
+        android:scaleType="centerInside"
+        android:src="@drawable/oblivion_guard"
         app:layout_constraintBottom_toTopOf="@id/textTitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -74,6 +75,7 @@
         android:text="Quay về"
         android:textAllCaps="false"
         android:textColor="#FFFFFF"
+        android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
