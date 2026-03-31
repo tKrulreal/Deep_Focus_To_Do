@@ -1,71 +1,50 @@
 package com.example.deepfocustodo.models;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "focus_sessions")
 public class FocusSession {
 
+    @PrimaryKey(autoGenerate = true)
     private int id;
-    private int taskId;
+    private Integer taskId; 
     private long startTime;
     private long endTime;
     private int durationMinutes;
-    private String status;
+    private int pointsEarned; 
+    private String status; 
 
     public FocusSession() {
     }
 
-    public FocusSession(int id, int taskId, long startTime, long endTime, int durationMinutes, String status) {
-        this.id = id;
+    public FocusSession(Integer taskId, long startTime, long endTime, int durationMinutes, int pointsEarned, String status) {
         this.taskId = taskId;
         this.startTime = startTime;
         this.endTime = endTime;
         this.durationMinutes = durationMinutes;
+        this.pointsEarned = pointsEarned;
         this.status = status;
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public Integer getTaskId() { return taskId; }
+    public void setTaskId(Integer taskId) { this.taskId = taskId; }
 
-    public int getTaskId() {
-        return taskId;
-    }
+    public long getStartTime() { return startTime; }
+    public void setStartTime(long startTime) { this.startTime = startTime; }
 
-    public void setTaskId(int taskId) {
-        this.taskId = taskId;
-    }
+    public long getEndTime() { return endTime; }
+    public void setEndTime(long endTime) { this.endTime = endTime; }
 
-    public long getStartTime() {
-        return startTime;
-    }
+    public int getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
 
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
-    }
+    public int getPointsEarned() { return pointsEarned; }
+    public void setPointsEarned(int pointsEarned) { this.pointsEarned = pointsEarned; }
 
-    public long getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
-    }
-
-    public int getDurationMinutes() {
-        return durationMinutes;
-    }
-
-    public void setDurationMinutes(int durationMinutes) {
-        this.durationMinutes = durationMinutes;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

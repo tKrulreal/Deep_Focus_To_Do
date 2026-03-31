@@ -8,7 +8,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -17,7 +16,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.adapters.AppListAdapter;
 import com.example.deepfocustodo.models.AppItem;
-import com.example.deepfocustodo.services.BlockerService;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,8 +57,6 @@ public class BlockedAppsActivity extends AppCompatActivity {
         setupRecyclerView();
         loadInstalledApps();
 
-        // Chạy BlockerService
-        startService(new Intent(this, BlockerService.class));
     }
 
     private void setupRecyclerView() {

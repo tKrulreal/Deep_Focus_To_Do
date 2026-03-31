@@ -1,7 +1,12 @@
 package com.example.deepfocustodo.models;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "tasks")
 public class Task {
 
+    @PrimaryKey(autoGenerate = true)
     private int id;
     private String title;
     private String description;
@@ -11,8 +16,7 @@ public class Task {
     public Task() {
     }
 
-    public Task(int id, String title, String description, boolean completed, long createdAt) {
-        this.id = id;
+    public Task(String title, String description, boolean completed, long createdAt) {
         this.title = title;
         this.description = description;
         this.completed = completed;
