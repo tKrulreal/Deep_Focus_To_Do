@@ -6,6 +6,9 @@ public class DailyStats {
     private int sessionCount;
     private int pointsEarned;
 
+    public DailyStats() {
+    }
+
     public DailyStats(String dateLabel, int totalMinutes, int sessionCount, int pointsEarned) {
         this.dateLabel = dateLabel;
         this.totalMinutes = totalMinutes;
@@ -17,4 +20,9 @@ public class DailyStats {
     public int getTotalMinutes() { return totalMinutes; }
     public int getSessionCount() { return sessionCount; }
     public int getPointsEarned() { return pointsEarned; }
+
+    public void setDateLabel(String dateLabel) { this.dateLabel = dateLabel; }
+    public void setTotalMinutes(int totalMinutes) { this.totalMinutes = totalMinutes; }
+    public void setSessionCount(int sessionCount) { this.sessionCount = sessionCount; }
+    public void setPointsEarned(int pointsEarned) { this.pointsEarned = pointsEarned; }
 }

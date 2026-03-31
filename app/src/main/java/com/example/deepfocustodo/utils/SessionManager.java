@@ -8,6 +8,9 @@ public class SessionManager {
     private static Integer selectedTaskId = null;
     private static long sessionStartTime = 0;
 
+    private static final int POINTS_PER_MINUTE = 10;
+    private static final int COMPLETION_BONUS = 50;
+
     public static void setSelectedTaskId(Integer taskId) {
         selectedTaskId = taskId;
     }
@@ -20,14 +23,22 @@ public class SessionManager {
         sessionStartTime = System.currentTimeMillis();
     }
 
+    public static boolean isSessionRunning() {
+        return sessionStartTime > 0;
+    }
+
+    public static void clearSelectedTask() {
+        selectedTaskId = null;
+    }
+
     public static void recordSession(Context context, boolean isCompleted) {
         if (sessionStartTime == 0) return;
 
         long endTime = System.currentTimeMillis();
         long durationMs = endTime - sessionStartTime;
-        int durationMinutes = (int) (durationMs / (1000 * 60));
+        int durationMinutes = (int) Math.max(1, durationMs / (1000 * 60));
 
-        int points = isCompleted ? durationMinutes * 10 : 0;
+        int points = isCompleted ? (durationMinutes * POINTS_PER_MINUTE) + COMPLETION_BONUS : 0;
         String status = isCompleted ? "COMPLETED" : "FAILED";
 
         FocusSession session = new FocusSession(

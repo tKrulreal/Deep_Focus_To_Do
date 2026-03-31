@@ -18,6 +18,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvTotalFocusMinutes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
@@ -27,6 +28,17 @@
             android:textSize="18sp" />
 
         <TextView
+            android:id="@+id/tvCompletedSessions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#EFEFEF"
+            android:padding="16dp"
+            android:text="Tổng phiên hoàn thành: 0"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvTotalPoints"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -36,12 +48,45 @@
             android:textSize="18sp" />
 
         <TextView
+            android:id="@+id/tvStreak"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:layout_marginTop="20dp"
-            android:background="#DDDDDD"
-            android:gravity="center"
-            android:text="Khu vực biểu đồ thống kê" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#EFEFEF"
+            android:padding="16dp"
+            android:text="Streak: 0 ngày"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvTodayUsage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#EFEFEF"
+            android:padding="16dp"
+            android:text="Thời gian dùng app khác hôm nay: 0 phút"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvBlockedAttempts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#EFEFEF"
+            android:padding="16dp"
+            android:text="Số lần mở app bị chặn: 0"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvDailyChart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#EFEFEF"
+            android:fontFamily="monospace"
+            android:padding="16dp"
+            android:text="Biểu đồ 7 ngày"
+            android:textSize="14sp" />
 
     </LinearLayout>
 </ScrollView>

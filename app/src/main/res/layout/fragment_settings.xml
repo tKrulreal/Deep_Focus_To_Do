@@ -44,6 +44,19 @@
                 android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtLongBreakTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Long break time (minutes)"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switchMusic"
             android:layout_width="wrap_content"

@@ -7,14 +7,12 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.models.Task;
-import com.example.deepfocustodo.utils.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +25,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public interface OnTaskClickListener {
         void onTaskCheckChanged(Task task, boolean isChecked);
         void onDeleteClick(Task task);
+        void onTaskClick(Task task);
     }
 
     public TaskAdapter(OnTaskClickListener listener) {
@@ -85,11 +84,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
             btnDelete.setOnClickListener(v -> listener.onDeleteClick(task));
             
-            // Fix: Cho phép chọn task khi click vào item
-            itemView.setOnClickListener(v -> {
-                SessionManager.setSelectedTaskId(task.getId());
-                Toast.makeText(v.getContext(), "Đã chọn: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-            });
+            itemView.setOnClickListener(v -> listener.onTaskClick(task));
         }
 
         private void updateStrikethrough(boolean isCompleted) {

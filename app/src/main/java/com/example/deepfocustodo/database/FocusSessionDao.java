@@ -4,6 +4,7 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
 
+import com.example.deepfocustodo.models.DailyStats;
 import com.example.deepfocustodo.models.FocusSession;
 
 import java.util.List;
@@ -21,8 +22,28 @@ public interface FocusSessionDao {
     List<FocusSession> getSessionsInDay(long startOfDay, long endOfDay);
 
     @Query("SELECT SUM(pointsEarned) FROM focus_sessions WHERE status = 'COMPLETED'")
-    int getTotalPoints();
+    Integer getTotalPoints();
 
     @Query("SELECT SUM(durationMinutes) FROM focus_sessions WHERE status = 'COMPLETED' AND startTime BETWEEN :startOfDay AND :endOfDay")
-    int getTotalFocusMinutesInDay(long startOfDay, long endOfDay);
+    Integer getTotalFocusMinutesInDay(long startOfDay, long endOfDay);
+
+    @Query("SELECT SUM(durationMinutes) FROM focus_sessions WHERE status = 'COMPLETED'")
+    Integer getTotalFocusMinutes();
+
+    @Query("SELECT COUNT(*) FROM focus_sessions WHERE status = 'COMPLETED'")
+    int getCompletedSessionCount();
+
+    @Query("SELECT startTime FROM focus_sessions WHERE status = 'COMPLETED' ORDER BY startTime DESC")
+    List<Long> getCompletedSessionStartTimes();
+
+    @Query("SELECT strftime('%d/%m', startTime/1000, 'unixepoch', 'localtime') AS dateLabel, " +
+            "SUM(durationMinutes) AS totalMinutes, " +
+            "COUNT(*) AS sessionCount, " +
+            "SUM(pointsEarned) AS pointsEarned " +
+            "FROM focus_sessions " +
+            "WHERE status = 'COMPLETED' " +
+            "GROUP BY strftime('%Y-%m-%d', startTime/1000, 'unixepoch', 'localtime') " +
+            "ORDER BY MAX(startTime) DESC " +
+            "LIMIT :limit")
+    List<DailyStats> getRecentDailyStats(int limit);
 }

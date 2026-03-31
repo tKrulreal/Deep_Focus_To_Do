@@ -17,13 +17,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.adapters.TaskAdapter;
 import com.example.deepfocustodo.database.AppDatabase;
-import com.example.deepfocustodo.models.FocusSession;
 import com.example.deepfocustodo.models.Task;
+import com.example.deepfocustodo.utils.SessionManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 
-public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickListener {
+public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickListener, TabRefreshable {
 
     private RecyclerView rvTasks;
     private TaskAdapter adapter;
@@ -53,30 +53,14 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
         loadTasks();
 
         fabAddTask.setOnClickListener(v -> showAddTaskDialog());
-        
-        // TEST MODE: Nhấn giữ nút FAB để tạo dữ liệu lịch sử giả
-        fabAddTask.setOnLongClickListener(v -> {
-            createMockData();
-            return true;
-        });
     }
 
-    private void createMockData() {
-        new Thread(() -> {
-            long now = System.currentTimeMillis();
-            // Tạo 1 phiên hoàn thành 25p
-            db.focusSessionDao().insertSession(new FocusSession(
-                    null, now - 3600000, now - 2100000, 25, 250, "COMPLETED"));
-            // Tạo 1 phiên thất bại 10p
-            db.focusSessionDao().insertSession(new FocusSession(
-                    null, now - 1800000, now - 1200000, 10, 0, "FAILED"));
-            
-            if (isAdded()) {
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "Đã tạo dữ liệu giả! Hãy vào History để kiểm tra.", Toast.LENGTH_LONG).show();
-                });
-            }
-        }).start();
+    @Override
+    public void onTabSelected() {
+        if (!isAdded() || getView() == null) {
+            return;
+        }
+        loadTasks();
     }
 
     private void setupRecyclerView() {
@@ -114,6 +98,39 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                 .show();
     }
 
+    private void showEditTaskDialog(Task task) {
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_task, null);
+        EditText etTitle = dialogView.findViewById(R.id.etTaskTitle);
+        EditText etDesc = dialogView.findViewById(R.id.etTaskDesc);
+
+        etTitle.setText(task.getTitle());
+        etDesc.setText(task.getDescription());
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Edit Task")
+                .setView(dialogView)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String title = etTitle.getText().toString().trim();
+                    String desc = etDesc.getText().toString().trim();
+
+                    if (title.isEmpty()) {
+                        Toast.makeText(requireContext(), "Title cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    task.setTitle(title);
+                    task.setDescription(desc);
+                    db.taskDao().updateTask(task);
+                    loadTasks();
+                })
+                .setNeutralButton("Assign", (dialog, which) -> {
+                    SessionManager.setSelectedTaskId(task.getId());
+                    Toast.makeText(requireContext(), "Đã chọn task cho phiên tập trung", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     @Override
     public void onTaskCheckChanged(Task task, boolean isChecked) {
         task.setCompleted(isChecked);
@@ -132,5 +149,10 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    @Override
+    public void onTaskClick(Task task) {
+        showEditTaskDialog(task);
     }
 }
