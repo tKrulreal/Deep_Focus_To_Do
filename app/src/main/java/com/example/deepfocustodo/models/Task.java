@@ -12,54 +12,49 @@ public class Task {
     private String description;
     private boolean completed;
     private long createdAt;
+    private long updatedAt;
+    private int priority; // 1: Low, 2: Medium, 3: High
+    private int estimatedSessions; // Pomodoros estimated
+    private int completedSessions; // Pomodoros completed
 
     public Task() {
     }
 
-    public Task(String title, String description, boolean completed, long createdAt) {
+    public Task(String title, String description, boolean completed, long createdAt, int priority, int estimatedSessions) {
         this.title = title;
         this.description = description;
         this.completed = completed;
         this.createdAt = createdAt;
+        this.updatedAt = createdAt;
+        this.priority = priority;
+        this.estimatedSessions = estimatedSessions;
+        this.completedSessions = 0;
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public String getTitle() {
-        return title;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public boolean isCompleted() { return completed; }
+    public void setCompleted(boolean completed) { this.completed = completed; }
 
-    public String getDescription() {
-        return description;
-    }
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
-    public boolean isCompleted() {
-        return completed;
-    }
+    public int getPriority() { return priority; }
+    public void setPriority(int priority) { this.priority = priority; }
 
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
-    }
+    public int getEstimatedSessions() { return estimatedSessions; }
+    public void setEstimatedSessions(int estimatedSessions) { this.estimatedSessions = estimatedSessions; }
 
-    public long getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(long createdAt) {
-        this.createdAt = createdAt;
-    }
+    public int getCompletedSessions() { return completedSessions; }
+    public void setCompletedSessions(int completedSessions) { this.completedSessions = completedSessions; }
 }

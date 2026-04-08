@@ -166,11 +166,11 @@ public class PomodoroService extends Service {
 
 		loadDurations();
 		if (isFocus && !sessionInProgress) {
-			SessionManager.startSession();
+			SessionManager.startSession(this, "FOCUS", (int)(focusTimeMs / 60000));
 			sessionInProgress = true;
 			setFocusMode(true);
 			startFocusMusicIfEnabled();
-			notifyPhaseEvent("Bat dau tap trung", "Da bat dau phien pomodoro moi");
+			notifyPhaseEvent("Bắt đầu tập trung", "Đã bắt đầu phiên pomodoro mới");
 		}
 
 		if (timeLeftMs <= 0L) {
@@ -207,8 +207,10 @@ public class PomodoroService extends Service {
 
 	private void handleStop() {
 		cancelTimer();
-		if (isFocus && sessionInProgress) {
-			SessionManager.recordSession(this, false);
+		if (sessionInProgress) {
+            long durationMs = isFocus ? (focusTimeMs - timeLeftMs) : (getCurrentBreakTimeMs() - timeLeftMs);
+            int durationMins = (int)(durationMs / 60000);
+			SessionManager.recordSession(this, Math.max(0, durationMins), false);
 		}
 
 		isRunning = false;
@@ -276,25 +278,33 @@ public class PomodoroService extends Service {
 
 		if (isFocus) {
 			if (sessionInProgress) {
-				SessionManager.recordSession(this, true);
+				SessionManager.recordSession(this, (int)(focusTimeMs / 60000), true);
 			}
 			completedFocusSessions++;
 			sessionInProgress = false;
 			setFocusMode(false);
 			stopFocusMusic();
-			notifyPhaseEvent("Hoan thanh phien", "Ban vua hoan thanh mot phien tap trung");
+			notifyPhaseEvent("Hoàn thành phiên", "Bạn vừa hoàn thành một phiên tập trung");
 
 			isFocus = false;
 			timeLeftMs = getCurrentBreakTimeMs();
-			notifyPhaseEvent("Bat dau nghi", "Den gio nghi ngoi de phuc hoi");
+            
+            SessionManager.startSession(this, completedFocusSessions % FOCUS_PER_LONG_BREAK == 0 ? "LONG_BREAK" : "SHORT_BREAK", (int)(timeLeftMs / 60000));
+            sessionInProgress = true;
+            
+			notifyPhaseEvent("Bắt đầu nghỉ", "Đến giờ nghỉ ngơi để phục hồi");
 			startTimer();
 		} else {
+            if (sessionInProgress) {
+                SessionManager.recordSession(this, (int)(getCurrentBreakTimeMs() / 60000), true);
+            }
+            
 			isFocus = true;
-			SessionManager.startSession();
+			SessionManager.startSession(this, "FOCUS", (int)(focusTimeMs / 60000));
 			sessionInProgress = true;
 			setFocusMode(true);
 			startFocusMusicIfEnabled();
-			notifyPhaseEvent("Bat dau tap trung", "Bat dau phien tiep theo");
+			notifyPhaseEvent("Bắt đầu tập trung", "Bắt đầu phiên tiếp theo");
 
 			timeLeftMs = focusTimeMs;
 			startTimer();
@@ -329,7 +339,8 @@ public class PomodoroService extends Service {
 	private void setFocusMode(boolean active) {
 		preferenceHelper.setFocusActive(active);
 
-		Intent blockerIntent = new Intent(this, BlockerService.class);
+        // Fix: Use Class reference instead of String to avoid constructor error
+		Intent blockerIntent = new Intent(this, com.example.deepfocustodo.services.BlockerService.class);
 		if (active) {
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 				ContextCompat.startForegroundService(this, blockerIntent);
@@ -348,12 +359,16 @@ public class PomodoroService extends Service {
 		if (focusMediaPlayer != null) {
 			return;
 		}
-
-		focusMediaPlayer = MediaPlayer.create(this, R.raw.stop_right_there);
-		if (focusMediaPlayer != null) {
-			focusMediaPlayer.setLooping(true);
-			focusMediaPlayer.start();
-		}
+        
+        try {
+            focusMediaPlayer = MediaPlayer.create(this, R.raw.stop_right_there);
+            if (focusMediaPlayer != null) {
+                focusMediaPlayer.setLooping(true);
+                focusMediaPlayer.start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 	private void stopFocusMusic() {
@@ -405,13 +420,13 @@ public class PomodoroService extends Service {
 			return;
 		}
 
-		NotificationChannel channel = new NotificationChannel(
-				CHANNEL_ID,
-				"Pomodoro Timer",
-				NotificationManager.IMPORTANCE_LOW
-		);
-		NotificationManager manager = getSystemService(NotificationManager.class);
+		NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		if (manager != null) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Pomodoro Timer",
+                    NotificationManager.IMPORTANCE_LOW
+            );
 			manager.createNotificationChannel(channel);
 
 			NotificationChannel eventChannel = new NotificationChannel(
@@ -431,7 +446,7 @@ public class PomodoroService extends Service {
 				.setAutoCancel(true)
 				.setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-		NotificationManager manager = getSystemService(NotificationManager.class);
+		NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		if (manager != null) {
 			manager.notify(EVENT_NOTIFICATION_BASE_ID + (eventNotificationCounter++ % 50), builder.build());
 		}
@@ -439,17 +454,20 @@ public class PomodoroService extends Service {
 
 	private void updateForegroundNotification() {
 		Notification notification = buildNotification();
-		startForeground(NOTIFICATION_ID, notification);
+		NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(NOTIFICATION_ID, notification);
+        }
 	}
 
 	private Notification buildNotification() {
-		String phase = isFocus ? "Tap trung" : "Nghi";
+		String phase = isFocus ? "Tập trung" : "Nghỉ";
 		String timerText = formatTime(timeLeftMs);
 		String content = phase + " - " + timerText;
 
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
 				.setSmallIcon(R.mipmap.ic_launcher)
-				.setContentTitle("Pomodoro dang chay")
+				.setContentTitle("Pomodoro đang chạy")
 				.setContentText(content)
 				.setOnlyAlertOnce(true)
 				.setOngoing(true)
