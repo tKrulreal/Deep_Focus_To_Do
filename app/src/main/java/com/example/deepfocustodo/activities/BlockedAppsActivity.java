@@ -87,10 +87,6 @@ public class BlockedAppsActivity extends AppCompatActivity {
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
 
             List<ResolveInfo> resolveInfoList = pm.queryIntentActivities(intent, 0);
-
-            // Sắp xếp theo tên ứng dụng A-Z
-            Collections.sort(resolveInfoList, new ResolveInfo.DisplayNameComparator(pm));
-
             List<AppItem> installedApps = new ArrayList<>();
 
             for (ResolveInfo resolveInfo : resolveInfoList) {
@@ -109,6 +105,14 @@ public class BlockedAppsActivity extends AppCompatActivity {
 
                 installedApps.add(new AppItem(appName, packageName, icon, isBlocked));
             }
+
+            // SẮP XẾP: App bị Block (Switch ON) lên trước, sau đó sắp xếp theo A-Z
+            Collections.sort(installedApps, (app1, app2) -> {
+                if (app1.isBlocked() != app2.isBlocked()) {
+                    return app1.isBlocked() ? -1 : 1;
+                }
+                return app1.getAppName().compareToIgnoreCase(app2.getAppName());
+            });
 
             // Đưa dữ liệu lên UI Thread để cập nhật giao diện
             runOnUiThread(() -> adapter.setAppList(installedApps));

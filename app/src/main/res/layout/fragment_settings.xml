@@ -62,6 +62,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:textColor="?attr/colorOnSurface"
+            app:trackTint="?attr/colorControlActivated"
             android:text="Bật nhạc nền" />
 
         <Button
@@ -73,6 +75,7 @@
 
         <Button
             android:id="@+id/btnOpenBlockedApps"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"

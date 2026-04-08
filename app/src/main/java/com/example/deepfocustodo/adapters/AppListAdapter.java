@@ -51,6 +51,7 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
         holder.switchBlockApp.setOnCheckedChangeListener(null);
         holder.switchBlockApp.setChecked(app.isBlocked());
 
+        // Lắng nghe sự kiện khi Switch thay đổi
         holder.switchBlockApp.setOnCheckedChangeListener((buttonView, isChecked) -> {
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION) {
@@ -60,9 +61,15 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
             }
         });
 
+        // Lắng nghe sự kiện khi click vào toàn bộ dòng (row)
         holder.itemView.setOnClickListener(v -> {
-            boolean newState = !app.isBlocked();
-            holder.switchBlockApp.setChecked(newState);
+            int pos = holder.getAdapterPosition();
+            if (pos != RecyclerView.NO_POSITION) {
+                // Chỉ cần đảo ngược trạng thái của Switch.
+                // Khi Switch đổi trạng thái, nó sẽ tự động kích hoạt OnCheckedChangeListener ở trên.
+                boolean isCurrentlyChecked = holder.switchBlockApp.isChecked();
+                holder.switchBlockApp.setChecked(!isCurrentlyChecked);
+            }
         });
     }
 

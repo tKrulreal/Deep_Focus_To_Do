@@ -27,4 +27,7 @@ public interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE completed = :isCompleted ORDER BY createdAt DESC")
     List<Task> getTasksByStatus(boolean isCompleted);
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE completed = 1")
+    int getCompletedTaskCount();
 }

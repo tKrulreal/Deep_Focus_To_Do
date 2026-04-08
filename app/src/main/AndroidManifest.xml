@@ -42,7 +42,8 @@
         <activity
             android:name=".activities.BlockPopupActivity"
             android:launchMode="singleTask"
-            android:excludeFromRecents="true" />
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"/>
         <activity android:name=".activities.HistoryActivity" />
         <activity
             android:name=".activities.MainActivity"

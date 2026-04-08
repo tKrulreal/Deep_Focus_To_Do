@@ -46,4 +46,12 @@ public interface FocusSessionDao {
             "ORDER BY MAX(startTime) DESC " +
             "LIMIT :limit")
     List<DailyStats> getRecentDailyStats(int limit);
+
+    // Tính tổng điểm kiếm được tính đến cuối ngày đang chọn
+    @Query("SELECT SUM(pointsEarned) FROM focus_sessions WHERE status = 'COMPLETED' AND startTime <= :endOfDayMs")
+    Integer getTotalPointsUpTo(long endOfDayMs);
+
+    // Lấy lịch sử các phiên tính đến cuối ngày đang chọn
+    @Query("SELECT startTime FROM focus_sessions WHERE status = 'COMPLETED' AND startTime <= :endOfDayMs ORDER BY startTime DESC")
+    List<Long> getCompletedSessionStartTimesUpTo(long endOfDayMs);
 }

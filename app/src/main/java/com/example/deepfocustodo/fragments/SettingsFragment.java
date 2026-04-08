@@ -63,7 +63,21 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
         btnSaveSettings.setOnClickListener(v -> saveSettings());
 
         btnOpenBlockedApps.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), BlockedAppsActivity.class);
+
+            if (isPomodoroRunning()) {
+
+                Toast.makeText(
+                        requireContext(),
+                        "Pomodoro đang chạy. Không thể thực hiện chặn ứng dụng!",
+                        Toast.LENGTH_LONG
+                ).show();
+
+                return;
+            }
+
+            Intent intent =
+                    new Intent(requireContext(), BlockedAppsActivity.class);
+
             startActivity(intent);
         });
     }
@@ -74,6 +88,7 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
             return;
         }
         loadSavedSettings();
+        updateBlockedAppsButton();
     }
 
     private void loadSavedSettings() {
@@ -133,5 +148,23 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
         Intent intent = new Intent(requireContext(), PomodoroService.class);
         intent.setAction(PomodoroService.ACTION_APPLY_SETTINGS);
         requireContext().startService(intent);
+    }
+
+    private boolean isPomodoroRunning() {
+        PomodoroService.TimerState state =
+                PomodoroService.readState(requireContext());
+
+        return state.isRunning && state.sessionInProgress;
+    }
+
+    private void updateBlockedAppsButton() {
+
+        boolean running = isPomodoroRunning();
+
+        if (running) {
+            btnOpenBlockedApps.setAlpha(0.4f);   // mờ đi
+        } else {
+            btnOpenBlockedApps.setAlpha(1f);
+        }
     }
 }

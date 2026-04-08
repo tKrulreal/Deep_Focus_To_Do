@@ -121,6 +121,54 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Biểu đồ 1 ngày -->
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/barChart"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="16dp"/>
+
+        <!-- Biểu đồ chung -->
+        <LinearLayout
+            android:id="@+id/layoutGeneralCharts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Biểu đồ 7 ngày -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Thống kê 7 ngày qua"
+                android:textColor="#888"
+                android:textSize="14sp" />
+
+            <com.github.mikephil.charting.charts.BarChart
+                android:id="@+id/barChartWeekly"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Biểu đồ Tròn phân bổ -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Phân bổ thời gian trong ngày"
+                android:textColor="#888"
+                android:textSize="14sp" />
+
+            <com.github.mikephil.charting.charts.PieChart
+                android:id="@+id/pieChartTimeDistribution"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:layout_marginBottom="20dp"/>
+        </LinearLayout>
+
+
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -249,8 +297,7 @@
             app:cardCornerRadius="20dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true"
-            app:cardPreventCornerOverlap="false"
-            app:cardBackgroundColor="#FFFFFF">
+            app:cardPreventCornerOverlap="false">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -267,6 +314,7 @@
 
                     <!-- Icon rực rỡ hơn -->
                     <ImageView
+                        android:id="@+id/ivBadgeIcon"
                         android:layout_width="56dp"
                         android:layout_height="56dp"
                         android:background="#FFF3E0"
@@ -304,9 +352,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:text="0 ngày liên tiếp"
-                            android:textColor="#888"
-                            android:textSize="14sp"
-                            android:fontFamily="sans-serif-black" />
+                            android:textStyle="bold"
+                            android:textSize="15sp"
+                            android:fontFamily="sans-serif-medium"/>
                     </LinearLayout>
                 </LinearLayout>
 
@@ -333,11 +381,64 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Còn 300 điểm để đạt Getting Started"
-                        android:textColor="#636E72"
-                        android:textSize="13sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Thẻ Nhiệm vụ hoàn thành (Chỉ hiện ở Chung) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardCompletedTasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="3dp"
+            app:cardUseCompatPadding="true"
+            app:cardPreventCornerOverlap="false"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="18dp"
+                android:gravity="center_vertical">
+
+                <!-- Icon -->
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    android:layout_marginEnd="14dp"
+                    app:tint="#4CAF50" /> <!-- Màu xanh lá -->
+
+                <!-- Text info -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nhiệm vụ hoàn thành"
+                        android:textSize="13sp"
+                        android:textColor="#888"/>
+
+                    <TextView
+                        android:id="@+id/tvCompletedTasks"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 nhiệm vụ"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#4CAF50"/>
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -345,13 +446,15 @@
 
         <!-- Thẻ Bị chặn -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/cardBlockedAttempts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             app:cardCornerRadius="14dp"
             app:cardElevation="3dp"
             app:cardUseCompatPadding="true"
-            app:cardPreventCornerOverlap="false">
+            app:cardPreventCornerOverlap="false"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -378,7 +481,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Số lần truy cập bị chặn"
+                        android:text="Số lần truy cập apps bị chặn"
                         android:textSize="13sp"
                         android:textColor="#888"/>
 
@@ -396,67 +499,7 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Thời gian dùng app khác -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp"
-            app:cardUseCompatPadding="true"
-            app:cardPreventCornerOverlap="false">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="18dp"
-                android:gravity="center_vertical">
-
-                <!-- Icon -->
-                <ImageView
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:src="@android:drawable/ic_menu_recent_history"
-                    android:layout_marginEnd="14dp"
-                    app:tint="#607D8B" />
-
-                <!-- Text info -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Thời gian dùng app khác"
-                        android:textSize="13sp"
-                        android:textColor="#888"/>
-
-                    <TextView
-                        android:id="@+id/tvTodayUsage"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 phút"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="#37474F"/>
-                </LinearLayout>
-
-            </LinearLayout>
-
-        </androidx.cardview.widget.CardView>
-        <TextView
-            android:id="@+id/tvDailyChart"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="#EFEFEF"
-            android:fontFamily="monospace"
-            android:padding="16dp"
-            android:text="Biểu đồ 7 ngày"
-            android:textSize="14sp" />
 
     </LinearLayout>
 </ScrollView>
