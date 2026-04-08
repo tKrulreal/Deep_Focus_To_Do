@@ -40,66 +40,62 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvTimer" />
 
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/controlsContainer"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="140dp"
         android:layout_marginTop="16dp"
-        android:orientation="vertical"
-        android:gravity="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/guideline"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvMode">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+        <!-- START -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStart"
+            android:layout_width="200dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:text="Bắt đầu"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@android:color/white"/>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStart"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Bắt đầu" />
+        <!-- PAUSE -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPause"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="200dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:text="Tạm dừng"
+            android:visibility="gone"
+            android:textColor="@color/purple_500"/>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPause"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Tạm dừng" />
-        </LinearLayout>
+        <!-- RESUME -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnResume"
+            android:layout_width="150dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center|start"
+            android:layout_marginStart="24dp"
+            android:text="Tiếp tục"
+            android:visibility="gone"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@android:color/white"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center">
+        <!-- STOP -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStop"
+            android:layout_width="150dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center|end"
+            android:layout_marginEnd="24dp"
+            android:text="Dừng"
+            android:visibility="gone"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:textColor="@color/purple_500"/>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStop"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Dừng" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnReset"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Đặt lại" />
-        </LinearLayout>
-    </LinearLayout>
+    </FrameLayout>
 
     <!-- Right Side: Tasks -->
     <TextView
