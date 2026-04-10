@@ -5,6 +5,9 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,6 +15,7 @@ import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.IBinder;
+import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -57,6 +61,12 @@ public class PomodoroService extends Service {
 	private PreferenceHelper preferenceHelper;
 	private SharedPreferences statePrefs;
 	private MediaPlayer focusMediaPlayer;
+	private NotificationManager notificationManager;
+	private AudioManager audioManager;
+	private AudioFocusRequest audioFocusRequest;
+	private final AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = this::onAudioFocusChanged;
+	private long lastPersistElapsedMs;
+	private int lastBroadcastSecond = -1;
 	private int eventNotificationCounter;
 
 	private long focusTimeMs;
@@ -111,13 +121,15 @@ public class PomodoroService extends Service {
 		loadDurations();
 		restoreState();
 		createNotificationChannel();
+		notificationManager = getSystemService(NotificationManager.class);
+		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		startForeground(NOTIFICATION_ID, buildNotification());
 
 		if (isRunning && timeLeftMs > 0L) {
 			if (isFocus) {
 				setFocusMode(true);
-				startFocusMusicIfEnabled();
 			}
+			resumeFocusMusicIfEnabled();
 			startTimer();
 		}
 	}
@@ -126,7 +138,7 @@ public class PomodoroService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		String action = intent != null ? intent.getAction() : null;
 		if (action == null) {
-			broadcastState();
+			broadcastState(true);
 			return START_STICKY;
 		}
 
@@ -155,7 +167,7 @@ public class PomodoroService extends Service {
 
 		updateForegroundNotification();
 		persistState();
-		broadcastState();
+		broadcastState(true);
 		return START_STICKY;
 	}
 
@@ -169,9 +181,9 @@ public class PomodoroService extends Service {
 			SessionManager.startSession(this, "FOCUS", getFocusPlannedMinutes());
 			sessionInProgress = true;
 			setFocusMode(true);
-			startFocusMusicIfEnabled();
 			notifyPhaseEvent("Bat dau tap trung", "Da bat dau phien pomodoro moi");
 		}
+		resumeFocusMusicIfEnabled();
 
 		if (timeLeftMs <= 0L) {
 			timeLeftMs = isFocus ? focusTimeMs : getCurrentBreakTimeMs();
@@ -188,8 +200,8 @@ public class PomodoroService extends Service {
 		isRunning = false;
 		if (isFocus) {
 			setFocusMode(false);
-			stopFocusMusic();
 		}
+		pauseFocusMusic();
 	}
 
 	private void handleResume() {
@@ -200,8 +212,8 @@ public class PomodoroService extends Service {
 		loadDurations();
 		if (isFocus) {
 			setFocusMode(true);
-			startFocusMusicIfEnabled();
 		}
+		resumeFocusMusicIfEnabled();
 		startTimer();
 	}
 
@@ -247,7 +259,7 @@ public class PomodoroService extends Service {
 		if (!preferenceHelper.isMusicEnabled()) {
 			stopFocusMusic();
 		} else if (isRunning && isFocus) {
-			startFocusMusicIfEnabled();
+			resumeFocusMusicIfEnabled();
 		}
 	}
 
@@ -259,9 +271,9 @@ public class PomodoroService extends Service {
 			@Override
 			public void onTick(long millisUntilFinished) {
 				timeLeftMs = millisUntilFinished;
-				persistState();
+				throttledPersistState();
 				updateForegroundNotification();
-				broadcastState();
+				broadcastState(false);
 			}
 
 			@Override
@@ -281,19 +293,19 @@ public class PomodoroService extends Service {
 			completedFocusSessions++;
 			sessionInProgress = false;
 			setFocusMode(false);
-			stopFocusMusic();
 			notifyPhaseEvent("Hoan thanh phien", "Ban vua hoan thanh mot phien tap trung");
 
 			isFocus = false;
 			timeLeftMs = getCurrentBreakTimeMs();
 			notifyPhaseEvent("Bat dau nghi", "Den gio nghi ngoi de phuc hoi");
+			resumeFocusMusicIfEnabled();
 			startTimer();
 		} else {
 			isFocus = true;
 			SessionManager.startSession(this, "FOCUS", getFocusPlannedMinutes());
 			sessionInProgress = true;
 			setFocusMode(true);
-			startFocusMusicIfEnabled();
+			resumeFocusMusicIfEnabled();
 			notifyPhaseEvent("Bat dau tap trung", "Bat dau phien tiep theo");
 
 			timeLeftMs = focusTimeMs;
@@ -302,7 +314,7 @@ public class PomodoroService extends Service {
 
 		persistState();
 		updateForegroundNotification();
-		broadcastState();
+		broadcastState(true);
 	}
 
 	private void loadDurations() {
@@ -341,25 +353,90 @@ public class PomodoroService extends Service {
 		}
 	}
 
-	private void startFocusMusicIfEnabled() {
+	private void resumeFocusMusicIfEnabled() {
 		if (!preferenceHelper.isMusicEnabled()) {
+			abandonMusicFocus();
+			return;
+		}
+		if (!requestMusicFocus()) {
 			return;
 		}
 		if (focusMediaPlayer != null) {
+			if (!focusMediaPlayer.isPlaying()) {
+				focusMediaPlayer.start();
+			}
 			return;
 		}
 
-		focusMediaPlayer = MediaPlayer.create(this, R.raw.stop_right_there);
+		focusMediaPlayer = MediaPlayer.create(this, R.raw.lofi);
 		if (focusMediaPlayer != null) {
 			focusMediaPlayer.setLooping(true);
+			focusMediaPlayer.setOnErrorListener((mp, what, extra) -> {
+				stopFocusMusic();
+				return true;
+			});
 			focusMediaPlayer.start();
+		}
+	}
+
+	private void pauseFocusMusic() {
+		if (focusMediaPlayer != null && focusMediaPlayer.isPlaying()) {
+			focusMediaPlayer.pause();
 		}
 	}
 
 	private void stopFocusMusic() {
 		if (focusMediaPlayer != null) {
+			focusMediaPlayer.setOnErrorListener(null);
 			focusMediaPlayer.release();
 			focusMediaPlayer = null;
+		}
+		abandonMusicFocus();
+	}
+
+	private boolean requestMusicFocus() {
+		if (audioManager == null) {
+			return true;
+		}
+
+		int result;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			if (audioFocusRequest == null) {
+				audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+						.setAudioAttributes(new AudioAttributes.Builder()
+								.setUsage(AudioAttributes.USAGE_MEDIA)
+								.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+								.build())
+						.setAcceptsDelayedFocusGain(true)
+						.setOnAudioFocusChangeListener(audioFocusChangeListener)
+						.build();
+			}
+			result = audioManager.requestAudioFocus(audioFocusRequest);
+		} else {
+			result = audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+		}
+
+		return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+	}
+
+	private void abandonMusicFocus() {
+		if (audioManager == null) {
+			return;
+		}
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			if (audioFocusRequest != null) {
+				audioManager.abandonAudioFocusRequest(audioFocusRequest);
+			}
+		} else {
+			audioManager.abandonAudioFocus(audioFocusChangeListener);
+		}
+	}
+
+	private void onAudioFocusChanged(int focusChange) {
+		if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+			pauseFocusMusic();
+		} else if (focusChange == AudioManager.AUDIOFOCUS_GAIN && isRunning && isFocus && preferenceHelper.isMusicEnabled()) {
+			resumeFocusMusicIfEnabled();
 		}
 	}
 
@@ -387,9 +464,23 @@ public class PomodoroService extends Service {
 				.putInt(KEY_COMPLETED_FOCUS, completedFocusSessions)
 				.putBoolean(KEY_SESSION_IN_PROGRESS, sessionInProgress)
 				.apply();
+		lastPersistElapsedMs = SystemClock.elapsedRealtime();
 	}
 
-	private void broadcastState() {
+	private void throttledPersistState() {
+		long now = SystemClock.elapsedRealtime();
+		if (now - lastPersistElapsedMs >= 5000L) {
+			persistState();
+		}
+	}
+
+	private void broadcastState(boolean force) {
+		int currentSecond = (int) (timeLeftMs / 1000L);
+		if (!force && isRunning && currentSecond == lastBroadcastSecond) {
+			return;
+		}
+		lastBroadcastSecond = currentSecond;
+
 		Intent broadcast = new Intent(ACTION_STATE);
 		broadcast.setPackage(getPackageName());
 		broadcast.putExtra(EXTRA_TIME_LEFT, timeLeftMs);
@@ -417,8 +508,11 @@ public class PomodoroService extends Service {
 			NotificationChannel eventChannel = new NotificationChannel(
 					EVENT_CHANNEL_ID,
 					"Pomodoro Events",
-					NotificationManager.IMPORTANCE_DEFAULT
+					NotificationManager.IMPORTANCE_LOW
 			);
+			eventChannel.setSound(null, (AudioAttributes) null);
+			eventChannel.enableVibration(false);
+			eventChannel.setVibrationPattern(new long[]{0L});
 			manager.createNotificationChannel(eventChannel);
 		}
 	}
@@ -429,7 +523,11 @@ public class PomodoroService extends Service {
 				.setContentTitle(title)
 				.setContentText(message)
 				.setAutoCancel(true)
-				.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+				.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+				.setDefaults(0)
+				.setVibrate(new long[]{0L})
+				.setSound(null)
+				.setSilent(true);
 
 		NotificationManager manager = getSystemService(NotificationManager.class);
 		if (manager != null) {
@@ -439,7 +537,11 @@ public class PomodoroService extends Service {
 
 	private void updateForegroundNotification() {
 		Notification notification = buildNotification();
-		startForeground(NOTIFICATION_ID, notification);
+		if (notificationManager != null) {
+			notificationManager.notify(NOTIFICATION_ID, notification);
+		} else {
+			startForeground(NOTIFICATION_ID, notification);
+		}
 	}
 
 	private Notification buildNotification() {

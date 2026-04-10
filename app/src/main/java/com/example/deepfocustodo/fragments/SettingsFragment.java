@@ -59,6 +59,7 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
         preferenceHelper = new PreferenceHelper(requireContext());
 
         loadSavedSettings();
+        updateBlockedAppsButton();
 
         btnSaveSettings.setOnClickListener(v -> saveSettings());
 
@@ -162,8 +163,10 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
         boolean running = isPomodoroRunning();
 
         if (running) {
+            btnOpenBlockedApps.setEnabled(false);
             btnOpenBlockedApps.setAlpha(0.4f);   // mờ đi
         } else {
+            btnOpenBlockedApps.setEnabled(true);
             btnOpenBlockedApps.setAlpha(1f);
         }
     }

@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase;
 import com.example.deepfocustodo.models.FocusSession;
 import com.example.deepfocustodo.models.Task;
 
-@Database(entities = {Task.class, FocusSession.class}, version = 3, exportSchema = false)
+@Database(entities = {Task.class, FocusSession.class}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static volatile AppDatabase instance;

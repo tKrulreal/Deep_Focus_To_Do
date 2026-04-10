@@ -1,7 +1,5 @@
 package com.example.deepfocustodo.adapters;
 
-import android.content.Context;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +7,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.deepfocustodo.R;
@@ -75,12 +74,14 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         String statusText = session.getStatus();
         holder.tvStatus.setText(statusText);
 
-        // Styling based on status
+        // Keep status badge style in sync with session state.
         if ("COMPLETED".equals(statusText)) {
-            holder.tvStatus.setTextColor(Color.parseColor("#4CAF50")); // Green
+            holder.tvStatus.setBackgroundResource(R.drawable.bg_status_completed);
+            holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.teal_700));
             holder.tvPoints.setVisibility(View.VISIBLE);
         } else {
-            holder.tvStatus.setTextColor(Color.parseColor("#F44336")); // Red
+            holder.tvStatus.setBackgroundResource(R.drawable.bg_status_failed);
+            holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.error_red));
             holder.tvPoints.setVisibility(View.GONE);
         }
         

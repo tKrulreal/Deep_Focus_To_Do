@@ -1,5 +1,7 @@
 package com.example.deepfocustodo.models;
 
+import androidx.room.Ignore;
+
 public class DailyStats {
     private String dateLabel; 
     private int totalMinutes;
@@ -9,6 +11,7 @@ public class DailyStats {
     public DailyStats() {
     }
 
+    @Ignore
     public DailyStats(String dateLabel, int totalMinutes, int sessionCount, int pointsEarned) {
         this.dateLabel = dateLabel;
         this.totalMinutes = totalMinutes;

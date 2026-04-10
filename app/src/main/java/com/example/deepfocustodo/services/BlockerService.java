@@ -16,11 +16,10 @@ import androidx.core.app.NotificationCompat;
 
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.activities.BlockPopupActivity;
+import com.example.deepfocustodo.utils.AppExecutors;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class BlockerService extends Service {
 
@@ -28,13 +27,14 @@ public class BlockerService extends Service {
     private static final String CHANNEL_ID = "blocker_service_channel";
     private static final int FOREGROUND_ID = 3001;
     private static final String KEY_BLOCKED_ATTEMPTS = "blocked_attempt_count";
-    private static final long CHECK_INTERVAL_MS = 1000L;
+    private static final long CHECK_INTERVAL_MS = 1500L;
 
     private Handler handler;
     private Runnable checkerRunnable;
 
     private SharedPreferences sharedPreferences;
     private PreferenceHelper preferenceHelper;
+    private volatile boolean checkInProgress;
 
     public static boolean isShowing = false;
 
@@ -51,7 +51,16 @@ public class BlockerService extends Service {
         checkerRunnable = new Runnable() {
             @Override
             public void run() {
-                checkBlockedApp();
+                if (!checkInProgress) {
+                    checkInProgress = true;
+                    AppExecutors.diskIO().execute(() -> {
+                        try {
+                            checkBlockedApp();
+                        } finally {
+                            checkInProgress = false;
+                        }
+                    });
+                }
                 handler.postDelayed(this, CHECK_INTERVAL_MS);
             }
         };
@@ -79,7 +88,7 @@ public class BlockerService extends Service {
 
         List<UsageStats> stats = usm.queryUsageStats(
                 UsageStatsManager.INTERVAL_DAILY,
-                time - 1000 * 5,
+                time - 4000,
                 time
         );
 
@@ -87,32 +96,34 @@ public class BlockerService extends Service {
             return;
         }
 
-        SortedMap<Long, UsageStats> sortedMap = new TreeMap<>();
-
+        UsageStats latest = null;
+        long latestTime = 0L;
         for (UsageStats usageStats : stats) {
-            if (usageStats != null) {
-                sortedMap.put(usageStats.getLastTimeUsed(), usageStats);
+            if (usageStats == null) {
+                continue;
+            }
+            long lastTimeUsed = usageStats.getLastTimeUsed();
+            if (lastTimeUsed > latestTime) {
+                latestTime = lastTimeUsed;
+                latest = usageStats;
             }
         }
 
-        if (!sortedMap.isEmpty()) {
-            UsageStats latest = sortedMap.get(sortedMap.lastKey());
-            if (latest == null || latest.getPackageName() == null) {
-                return;
-            }
-            String currentApp = latest.getPackageName();
+        if (latest == null || latest.getPackageName() == null) {
+            return;
+        }
+        String currentApp = latest.getPackageName();
 
-            if (currentApp.equals(getPackageName())) {
-                return;
-            }
+        if (currentApp.equals(getPackageName())) {
+            return;
+        }
 
-            boolean isBlocked = sharedPreferences.getBoolean(currentApp, false);
+        boolean isBlocked = sharedPreferences.getBoolean(currentApp, false);
 
-            if (isBlocked && !isShowing) {
-                isShowing = true;
-                incrementBlockedAttemptCount();
-                showBlockScreen();
-            }
+        if (isBlocked && !isShowing) {
+            isShowing = true;
+            incrementBlockedAttemptCount();
+            AppExecutors.mainThread(this::showBlockScreen);
         }
     }
 

@@ -9,11 +9,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -40,11 +42,14 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     private Button btnStart;
     private Button btnPause;
     private Button btnStop;
-    private Button btnReset;
     private Button btnViewHistory;
+    private ImageButton btnCancelTask;
     private TextView tvTimer;
     private TextView tvMode;
+    private TextView tvHomePoints;
+    private TextView tvCurrentTaskName;
     private RecyclerView recyclerTasks;
+    private CardView cardSelectedTask;
 
     private AppDatabase db;
     private PreferenceHelper preferenceHelper;
@@ -91,11 +96,20 @@ public class HomeFragment extends Fragment implements TabRefreshable {
                 return;
             }
 
+            boolean previousIsFocus = isFocus;
+            int previousCompletedFocus = completedFocusSessions;
+
             timeLeftMs = intent.getLongExtra(PomodoroService.EXTRA_TIME_LEFT, timeLeftMs);
             isRunning = intent.getBooleanExtra(PomodoroService.EXTRA_IS_RUNNING, isRunning);
             isFocus = intent.getBooleanExtra(PomodoroService.EXTRA_IS_FOCUS, isFocus);
             completedFocusSessions = intent.getIntExtra(PomodoroService.EXTRA_COMPLETED_FOCUS, completedFocusSessions);
             sessionInProgress = intent.getBooleanExtra(PomodoroService.EXTRA_SESSION_IN_PROGRESS, sessionInProgress);
+
+            boolean justCompletedFocus = previousIsFocus && !isFocus && completedFocusSessions > previousCompletedFocus;
+            if (justCompletedFocus) {
+                // Refresh points/task header right after a completed focus session is recorded.
+                loadHeaderInfo();
+            }
 
             updateTimerText();
             updateModeText();
@@ -121,13 +135,14 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         btnStart = view.findViewById(R.id.btnStart);
         btnPause = view.findViewById(R.id.btnPause);
         btnStop = view.findViewById(R.id.btnStop);
-        // Reuse the existing resume button slot as reset in this screen layout.
-        btnReset = view.findViewById(R.id.btnResume);
-        btnReset.setText("Reset");
         btnViewHistory = view.findViewById(R.id.btnViewHistory);
+        btnCancelTask = view.findViewById(R.id.btnCancelTask);
         tvTimer = view.findViewById(R.id.tvTimer);
         tvMode = view.findViewById(R.id.tvMode);
+        tvHomePoints = view.findViewById(R.id.tvHomePoints);
+        tvCurrentTaskName = view.findViewById(R.id.tvCurrentTaskName);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
+        cardSelectedTask = view.findViewById(R.id.cardSelectedTask);
 
         db = AppDatabase.getInstance(requireContext());
         preferenceHelper = new PreferenceHelper(requireContext());
@@ -138,6 +153,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
 
         setupTaskList();
         loadTasks();
+        loadHeaderInfo();
         updateTimerText();
         updateModeText();
         updateButtonStates();
@@ -145,8 +161,12 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         btnStart.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_START));
         btnPause.setOnClickListener(v -> dispatchServiceAction(isRunning ? PomodoroService.ACTION_PAUSE : PomodoroService.ACTION_RESUME));
         btnStop.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_STOP));
-        btnReset.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_RESET));
         btnViewHistory.setOnClickListener(v -> startActivity(new Intent(requireContext(), HistoryActivity.class)));
+        btnCancelTask.setOnClickListener(v -> {
+            SessionManager.clearSelectedTask(requireContext());
+            loadTasks();
+            loadHeaderInfo();
+        });
     }
 
     @Override
@@ -181,6 +201,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         loadDurations();
         loadStateFromService();
         loadTasks();
+        loadHeaderInfo();
         updateTimerText();
         updateModeText();
         updateButtonStates();
@@ -254,6 +275,29 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         });
     }
 
+    private void loadHeaderInfo() {
+        Context appContext = requireContext().getApplicationContext();
+        AppExecutors.diskIO().execute(() -> {
+            Integer totalPoints = db.focusSessionDao().getTotalPoints();
+            Integer selectedTaskId = SessionManager.getSelectedTaskId(appContext);
+            Task selectedTask = selectedTaskId != null ? db.taskDao().getTaskById(selectedTaskId) : null;
+
+            AppExecutors.mainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                tvHomePoints.setText(String.format(Locale.getDefault(), "Points: %d", totalPoints != null ? totalPoints : 0));
+
+                if (selectedTask != null && !selectedTask.isCompleted()) {
+                    cardSelectedTask.setVisibility(android.view.View.VISIBLE);
+                    tvCurrentTaskName.setText(selectedTask.getTitle());
+                } else {
+                    cardSelectedTask.setVisibility(android.view.View.GONE);
+                }
+            });
+        });
+    }
+
     private void loadDurations() {
         int focusMinutes = Math.max(1, preferenceHelper.getFocusTime());
         int breakMinutes = Math.max(1, preferenceHelper.getBreakTime());
@@ -288,18 +332,35 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     private void updateButtonStates() {
         long phaseDuration = isFocus ? focusTimeMs : getCurrentBreakTimeMs();
         boolean hasProgress = timeLeftMs > 0L && timeLeftMs < phaseDuration;
-        boolean canResume = !isRunning && timeLeftMs > 0L && hasProgress;
+        boolean canResume = !isRunning && sessionInProgress && hasProgress;
 
-        btnStart.setEnabled(!isRunning && !sessionInProgress && !hasProgress);
-        btnPause.setEnabled(isRunning || canResume);
-        btnPause.setText(isRunning ? "Tạm dừng" : "Tiếp tục");
-        btnStop.setEnabled(isRunning || sessionInProgress || hasProgress);
-        btnReset.setEnabled(!isRunning && hasProgress);
+        if (isRunning) {
+            // Running: show only Pause + Stop.
+            btnStart.setVisibility(android.view.View.GONE);
+            btnPause.setVisibility(android.view.View.VISIBLE);
+            btnStop.setVisibility(android.view.View.VISIBLE);
+            btnPause.setText("Tạm dừng");
+            btnPause.setEnabled(true);
+            btnStop.setEnabled(true);
+            return;
+        }
 
-        btnStart.setVisibility(!isRunning && !hasProgress ? android.view.View.VISIBLE : android.view.View.GONE);
-        btnPause.setVisibility((isRunning || canResume) ? android.view.View.VISIBLE : android.view.View.GONE);
-        btnStop.setVisibility((isRunning || hasProgress || sessionInProgress) ? android.view.View.VISIBLE : android.view.View.GONE);
-        btnReset.setVisibility((!isRunning && hasProgress) ? android.view.View.VISIBLE : android.view.View.GONE);
+        if (canResume) {
+            // Paused: show Continue + Stop.
+            btnStart.setVisibility(android.view.View.GONE);
+            btnPause.setVisibility(android.view.View.VISIBLE);
+            btnStop.setVisibility(android.view.View.VISIBLE);
+            btnPause.setText("Tiếp tục");
+            btnPause.setEnabled(true);
+            btnStop.setEnabled(true);
+            return;
+        }
+
+        // Idle: show only Start.
+        btnStart.setVisibility(android.view.View.VISIBLE);
+        btnPause.setVisibility(android.view.View.GONE);
+        btnStop.setVisibility(android.view.View.GONE);
+        btnStart.setEnabled(true);
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -314,11 +375,18 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     }
 
     private void onTaskCheckChanged(Task task, boolean isChecked) {
+        Context appContext = requireContext().getApplicationContext();
         AppExecutors.diskIO().execute(() -> {
+            long now = System.currentTimeMillis();
             task.setCompleted(isChecked);
-            task.setUpdatedAt(System.currentTimeMillis());
+            task.setUpdatedAt(now);
+            task.setCompletedAt(isChecked ? now : 0L);
             db.taskDao().updateTask(task);
+            if (isChecked) {
+                SessionManager.clearIfSelected(appContext, task.getId());
+            }
             loadTasks();
+            loadHeaderInfo();
         });
     }
 
@@ -331,6 +399,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
                 SessionManager.clearSelectedTask(appContext);
             }
             loadTasks();
+            loadHeaderInfo();
         });
     }
 
@@ -342,6 +411,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         SessionManager.setSelectedTaskId(requireContext(), task.getId());
         Toast.makeText(requireContext(), "Da chon task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
         loadTasks();
+        loadHeaderInfo();
     }
 
     private void onTaskLongClick(Task task) {
@@ -350,6 +420,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
             SessionManager.clearSelectedTask(requireContext());
             Toast.makeText(requireContext(), "Da bo chon task", Toast.LENGTH_SHORT).show();
             loadTasks();
+            loadHeaderInfo();
         }
     }
 }

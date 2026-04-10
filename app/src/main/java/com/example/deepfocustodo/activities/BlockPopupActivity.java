@@ -1,7 +1,6 @@
 package com.example.deepfocustodo.activities;
 
 import android.content.Intent;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.widget.Button;
 
@@ -14,8 +13,6 @@ import com.example.deepfocustodo.services.BlockerService;
 public class BlockPopupActivity extends AppCompatActivity {
 
     private Button buttonReturn;
-
-    private MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,8 +33,6 @@ public class BlockPopupActivity extends AppCompatActivity {
             finish();
         });
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.stop_right_there);
-        mediaPlayer.start();
     }
 
     @Override
@@ -46,10 +41,6 @@ public class BlockPopupActivity extends AppCompatActivity {
 
         BlockerService.isShowing = false;
 
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
     }
 
     @Override
@@ -58,10 +49,6 @@ public class BlockPopupActivity extends AppCompatActivity {
 
         BlockerService.isShowing = false;
 
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
     }
 
     @Override
@@ -70,10 +57,6 @@ public class BlockPopupActivity extends AppCompatActivity {
 
         BlockerService.isShowing = false;
 
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
         finish();
     }
 

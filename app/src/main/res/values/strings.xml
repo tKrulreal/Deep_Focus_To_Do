@@ -7,4 +7,10 @@
     <string name="reset">Reset</string>
     <string name="tasks">Tasks</string>
     <string name="xem_l_ch_s">Xem lịch sử</string>
+    <string name="history_title">Lich su tap trung</string>
+    <string name="history_subtitle">Theo doi cac phien da hoan thanh</string>
+    <string name="history_empty">Chua co du lieu lich su</string>
+    <string name="history_back">Quay lai</string>
+    <string name="history_clear_all">Xoa toan bo lich su</string>
+    <string name="history_empty_icon">Bieu tuong lich su trong</string>
 </resources>

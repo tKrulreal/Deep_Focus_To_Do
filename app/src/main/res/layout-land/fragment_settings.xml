@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:fillViewport="true">
 
     <LinearLayout
@@ -11,112 +12,143 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Tiêu đề chung nằm ở trên cùng -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Settings"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
+            android:text="Cài đặt"
+            android:textAppearance="@style/TextAppearance.DeepFocus.PageTitle" />
 
-        <!-- Chia 2 cột ngang -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="12dp"
+            android:text="Tối ưu pomodoro và điều khiển nhạc nền"
+            android:textAppearance="@style/TextAppearance.DeepFocus.PageSubtitle" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:baselineAligned="false"
             android:orientation="horizontal">
 
-            <!-- ========================================== -->
-            <!-- CỘT TRÁI: Nhập thời gian (Chiếm 50%) -->
-            <!-- ========================================== -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.DeepFocus.Card"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="12dp"
-                android:orientation="vertical">
+                android:layout_marginEnd="8dp"
+                app:cardUseCompatPadding="true">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/edtFocusTime"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Focus time (minutes)"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp">
+                    android:orientation="vertical"
+                    android:padding="18dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/edtBreakTime"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Thời lượng"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Break time (minutes)"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="10dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:endIconMode="clear_text">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtFocusTime"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Focus time (minutes)"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/edtLongBreakTime"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Long break time (minutes)"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
+                        android:layout_marginTop="10dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:endIconMode="clear_text">
 
-            <!-- ========================================== -->
-            <!-- CỘT PHẢI: Nút gạt & Nút bấm (Chiếm 50%) -->
-            <!-- ========================================== -->
-            <LinearLayout
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtBreakTime"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Break time (minutes)"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:endIconMode="clear_text">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtLongBreakTime"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Long break time (minutes)"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.DeepFocus.Card"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:orientation="vertical">
+                android:layout_marginStart="8dp"
+                app:cardUseCompatPadding="true">
 
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchMusic"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface"
-                    app:trackTint="?attr/colorControlActivated"
-                    android:textSize="16sp"
-                    android:text="Bật nhạc nền" />
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="18dp">
 
-                <!-- Thêm khoảng trống đẩy 2 nút xuống dưới (Tùy chọn) -->
-                <Space
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tùy chọn"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
-                <Button
-                    android:id="@+id/btnSaveSettings"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:text="Lưu cài đặt" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchMusic"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Bật nhạc nền"
+                        android:textColor="?attr/colorOnSurface"
+                        app:trackTint="?attr/colorControlActivated" />
 
-                <Button
-                    android:id="@+id/btnOpenBlockedApps"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:text="Chọn ứng dụng bị chặn" />
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
 
-            </LinearLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveSettings"
+                        style="@style/Widget.DeepFocus.Button.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Lưu cài đặt" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenBlockedApps"
+                        style="@style/Widget.DeepFocus.Button.Secondary"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="8dp"
+                        android:text="Chọn ứng dụng bị chặn" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

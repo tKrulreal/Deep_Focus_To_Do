@@ -2,6 +2,8 @@ package com.example.deepfocustodo.fragments;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,12 +27,19 @@ import com.example.deepfocustodo.utils.SessionManager;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickListener, TabRefreshable {
+
+    private static final int FILTER_ALL = 0;
+    private static final int FILTER_ACTIVE = 1;
+    private static final int FILTER_DONE = 2;
 
     private RecyclerView rvTasks;
     private TaskAdapter adapter;
@@ -38,7 +47,12 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     private StatsRepository statsRepository;
     private FloatingActionButton fabAddTask;
     private TextView tvTotalPointsHeader, tvEmptyTasks;
+    private TextInputEditText edtTaskSearch;
+    private MaterialButtonToggleGroup toggleTaskFilter;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final List<Task> allTasksCache = new ArrayList<>();
+    private int activeFilter = FILTER_ACTIVE;
+    private String searchQuery = "";
 
     public TasksFragment() {
     }
@@ -61,8 +75,11 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
         fabAddTask = view.findViewById(R.id.fabAddTask);
         tvTotalPointsHeader = view.findViewById(R.id.tvTotalPointsHeader);
         tvEmptyTasks = view.findViewById(R.id.tvEmptyTasks);
+        edtTaskSearch = view.findViewById(R.id.edtTaskSearch);
+        toggleTaskFilter = view.findViewById(R.id.toggleTaskFilter);
 
         setupRecyclerView();
+        setupTaskFilters();
         loadData();
 
         fabAddTask.setOnClickListener(v -> showTaskDialog(null));
@@ -95,8 +112,11 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
 
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        if (adapter != null) adapter.setTasks(tasks, requireContext());
-                        if (tvEmptyTasks != null) tvEmptyTasks.setVisibility(tasks.isEmpty() ? View.VISIBLE : View.GONE);
+                        allTasksCache.clear();
+                        if (tasks != null) {
+                            allTasksCache.addAll(tasks);
+                        }
+                        applyTaskFilters();
                         if (tvTotalPointsHeader != null) tvTotalPointsHeader.setText(String.format(java.util.Locale.getDefault(), "%d pts", totalPoints));
                     });
                 }
@@ -104,6 +124,83 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                 e.printStackTrace();
             }
         });
+    }
+
+    private void setupTaskFilters() {
+        if (toggleTaskFilter != null) {
+            toggleTaskFilter.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+                if (!isChecked) {
+                    return;
+                }
+                if (checkedId == R.id.btnFilterAll) {
+                    activeFilter = FILTER_ALL;
+                } else if (checkedId == R.id.btnFilterDone) {
+                    activeFilter = FILTER_DONE;
+                } else {
+                    activeFilter = FILTER_ACTIVE;
+                }
+                applyTaskFilters();
+            });
+        }
+
+        if (edtTaskSearch != null) {
+            edtTaskSearch.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    searchQuery = s != null ? s.toString().trim().toLowerCase(Locale.getDefault()) : "";
+                    applyTaskFilters();
+                }
+            });
+        }
+    }
+
+    private void applyTaskFilters() {
+        if (!isAdded() || adapter == null) {
+            return;
+        }
+
+        List<Task> filtered = new ArrayList<>();
+        for (Task task : allTasksCache) {
+            boolean passStatus;
+            if (activeFilter == FILTER_DONE) {
+                passStatus = task.isCompleted();
+            } else if (activeFilter == FILTER_ACTIVE) {
+                passStatus = !task.isCompleted();
+            } else {
+                passStatus = true;
+            }
+
+            if (!passStatus) {
+                continue;
+            }
+
+            if (!searchQuery.isEmpty()) {
+                String title = task.getTitle() != null ? task.getTitle().toLowerCase(Locale.getDefault()) : "";
+                String desc = task.getDescription() != null ? task.getDescription().toLowerCase(Locale.getDefault()) : "";
+                if (!title.contains(searchQuery) && !desc.contains(searchQuery)) {
+                    continue;
+                }
+            }
+            filtered.add(task);
+        }
+
+        adapter.setTasks(filtered, requireContext());
+        if (tvEmptyTasks != null) {
+            tvEmptyTasks.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+            if (filtered.isEmpty()) {
+                tvEmptyTasks.setText(searchQuery.isEmpty()
+                        ? "Không có task nào trong bộ lọc này"
+                        : "Không tìm thấy task phù hợp");
+            }
+        }
     }
 
     private void showTaskDialog(@Nullable Task taskToEdit) {
@@ -165,8 +262,10 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     @Override
     public void onTaskCheckChanged(Task task, boolean isChecked) {
         executor.execute(() -> {
+            long now = System.currentTimeMillis();
             task.setCompleted(isChecked);
-            task.setUpdatedAt(System.currentTimeMillis());
+            task.setUpdatedAt(now);
+            task.setCompletedAt(isChecked ? now : 0L);
             db.taskDao().updateTask(task);
             if (getActivity() != null) getActivity().runOnUiThread(this::loadData);
         });
@@ -210,8 +309,15 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
             Toast.makeText(requireContext(), "Cannot select a completed task", Toast.LENGTH_SHORT).show();
             return;
         }
-        SessionManager.setSelectedTaskId(requireContext(), task.getId());
+
+        Integer selectedTaskId = SessionManager.getSelectedTaskId(requireContext());
+        if (selectedTaskId != null && selectedTaskId.equals(task.getId())) {
+            SessionManager.clearSelectedTask(requireContext());
+            Toast.makeText(requireContext(), "Task unselected", Toast.LENGTH_SHORT).show();
+        } else {
+            SessionManager.setSelectedTaskId(requireContext(), task.getId());
+            Toast.makeText(requireContext(), "Task selected for focus", Toast.LENGTH_SHORT).show();
+        }
         loadData();
-        Toast.makeText(requireContext(), "Task selected for focus", Toast.LENGTH_SHORT).show();
     }
 }

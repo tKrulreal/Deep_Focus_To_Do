@@ -1,6 +1,7 @@
 package com.example.deepfocustodo.models;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "focus_sessions")
@@ -20,6 +21,7 @@ public class FocusSession {
     public FocusSession() {
     }
 
+    @Ignore
     public FocusSession(Integer taskId, String type, long startTime, long endTime, int plannedDuration, int actualDuration, int pointsEarned, String status) {
         this.taskId = taskId;
         this.type = type;

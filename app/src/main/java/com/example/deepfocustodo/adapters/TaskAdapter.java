@@ -21,7 +21,10 @@ import com.example.deepfocustodo.utils.SessionManager;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
@@ -72,9 +75,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         MaterialCardView cardView;
         CheckBox cbCompleted;
-        TextView tvTitle, tvDesc, tvPriority, tvSessions;
+        TextView tvTitle, tvDesc, tvPriority, tvSessions, tvCompletedTime;
         ImageButton btnDelete;
         LinearLayout layoutInfo;
+        private final SimpleDateFormat completionFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -84,6 +88,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvDesc = itemView.findViewById(R.id.tvTaskDesc);
             tvPriority = itemView.findViewById(R.id.tvPriority);
             tvSessions = itemView.findViewById(R.id.tvSessions);
+            tvCompletedTime = itemView.findViewById(R.id.tvCompletedTime);
             btnDelete = itemView.findViewById(R.id.btnDeleteTask);
             layoutInfo = itemView.findViewById(R.id.layoutTaskInfo);
         }
@@ -113,8 +118,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     break;
             }
 
-            tvSessions.setText(String.format(java.util.Locale.getDefault(), "%d/%d Pomodoros", 
-                    task.getCompletedSessions(), task.getEstimatedSessions()));
+            tvSessions.setText(String.format(Locale.getDefault(), "Can: %d | Thuc te: %d phien",
+                    task.getEstimatedSessions(), task.getCompletedSessions()));
+
+            if (task.isCompleted() && task.getCompletedAt() > 0L) {
+                tvCompletedTime.setVisibility(View.VISIBLE);
+                tvCompletedTime.setText("Hoan thanh luc: " + completionFormat.format(new Date(task.getCompletedAt())));
+            } else {
+                tvCompletedTime.setVisibility(View.GONE);
+            }
 
             cbCompleted.setOnCheckedChangeListener(null);
             cbCompleted.setChecked(task.isCompleted());
