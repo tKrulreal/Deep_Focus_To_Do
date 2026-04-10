@@ -11,6 +11,12 @@ public class PreferenceHelper {
     private static final String KEY_LONG_BREAK_TIME = "long_break_time";
     private static final String KEY_MUSIC_ENABLED = "music_enabled";
     private static final String KEY_FOCUS_ACTIVE = "focus_active";
+    private static final String KEY_SELECTED_TASK_ID = "selected_task_id";
+    
+    // Session Persistence
+    private static final String KEY_SESSION_START_TIME = "session_start_time";
+    private static final String KEY_SESSION_TYPE = "session_type";
+    private static final String KEY_SESSION_PLANNED_DURATION = "session_planned_duration";
 
     private final SharedPreferences sharedPreferences;
 
@@ -56,5 +62,40 @@ public class PreferenceHelper {
 
     public boolean isFocusActive() {
         return sharedPreferences.getBoolean(KEY_FOCUS_ACTIVE, false);
+    }
+
+    public void setSelectedTaskId(Integer taskId) {
+        if (taskId == null) {
+            sharedPreferences.edit().remove(KEY_SELECTED_TASK_ID).apply();
+        } else {
+            sharedPreferences.edit().putInt(KEY_SELECTED_TASK_ID, taskId).apply();
+        }
+    }
+
+    public Integer getSelectedTaskId() {
+        if (!sharedPreferences.contains(KEY_SELECTED_TASK_ID)) {
+            return null;
+        }
+        return sharedPreferences.getInt(KEY_SELECTED_TASK_ID, -1);
+    }
+    
+    public void saveSessionState(long startTime, String type, int plannedDuration) {
+        sharedPreferences.edit()
+                .putLong(KEY_SESSION_START_TIME, startTime)
+                .putString(KEY_SESSION_TYPE, type)
+                .putInt(KEY_SESSION_PLANNED_DURATION, plannedDuration)
+                .apply();
+    }
+    
+    public long getSessionStartTime() { return sharedPreferences.getLong(KEY_SESSION_START_TIME, 0); }
+    public String getSessionType() { return sharedPreferences.getString(KEY_SESSION_TYPE, "FOCUS"); }
+    public int getSessionPlannedDuration() { return sharedPreferences.getInt(KEY_SESSION_PLANNED_DURATION, 25); }
+    
+    public void clearSessionState() {
+        sharedPreferences.edit()
+                .remove(KEY_SESSION_START_TIME)
+                .remove(KEY_SESSION_TYPE)
+                .remove(KEY_SESSION_PLANNED_DURATION)
+                .apply();
     }
 }

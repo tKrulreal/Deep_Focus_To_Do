@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.database.AppDatabase;
+import com.example.deepfocustodo.database.StatsRepository;
 import com.example.deepfocustodo.models.DailyStats;
 
 import java.util.Calendar;
@@ -23,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -85,36 +87,59 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
 
     private void loadStatistics() {
         executorService.execute(() -> {
+            if (!isAdded()) return;
+
+            // Sử dụng StatsRepository để đồng bộ dữ liệu
+            StatsRepository repository = new StatsRepository(requireContext());
+            
             Integer totalFocus = db.focusSessionDao().getTotalFocusMinutes();
             Integer totalPoints = db.focusSessionDao().getTotalPoints();
             int completedSessions = db.focusSessionDao().getCompletedSessionCount();
             List<Long> completedStartTimes = db.focusSessionDao().getCompletedSessionStartTimes();
-            List<DailyStats> recentDailyStats = db.focusSessionDao().getRecentDailyStats(7);
+            
+            // Fix: Sử dụng hàm getRecentDailyStats đã có trong Repository
+            List<DailyStats> recentDailyStats = repository.getLast7DaysStats();
 
             int streakDays = computeStreakDays(completedStartTimes);
             int usageMinutes = getTodayExternalUsageMinutes();
             int blockedAttempts = getBlockedAttempts();
             int safeTotalPoints = totalPoints == null ? 0 : totalPoints;
+            int safeTotalFocus = totalFocus == null ? 0 : totalFocus;
+            int pointsToday = repository.getPointsToday();
+            String rank = repository.getUserRank(safeTotalPoints);
             String badge = buildBadgeText(streakDays, safeTotalPoints);
             String chart = buildDailyChart(recentDailyStats);
+            Map<String, Integer> completionRatio = repository.getCompletionRatio();
+            Map<String, Integer> topTasks = repository.getTopTasksWithNames(3);
+            int totalFailed = completionRatio.getOrDefault("Failed", 0);
+
+            int totalSessions = completedSessions + totalFailed;
+            int successRate = (totalSessions > 0) ? (completedSessions * 100 / totalSessions) : 0;
+
+            StringBuilder topTasksText = new StringBuilder("Top Tasks:\n");
+            topTasks.forEach((name, duration) -> topTasksText.append("- ").append(name).append(": ").append(duration).append("m\n"));
+
+
 
             if (!isAdded()) {
                 return;
             }
 
             requireActivity().runOnUiThread(() -> {
-                tvTotalFocusMinutes.setText("Tổng phút tập trung: " + (totalFocus == null ? 0 : totalFocus));
+                tvTotalFocusMinutes.setText("Tổng phút tập trung: " + safeTotalFocus);
                 tvCompletedSessions.setText("Tổng phiên hoàn thành: " + completedSessions);
                 tvTotalPoints.setText("Tổng điểm: " + safeTotalPoints);
                 tvStreak.setText("Streak: " + streakDays + " ngày | Badge: " + badge);
                 tvTodayUsage.setText("Thời gian dùng app khác hôm nay: " + usageMinutes + " phút");
                 tvBlockedAttempts.setText("Số lần mở app bị chặn: " + blockedAttempts);
                 tvDailyChart.setText(chart);
+                tvStreak.append(" | Tỉ lệ: " + successRate + "%");
             });
         });
     }
 
     private int getBlockedAttempts() {
+        if (!isAdded()) return 0;
         SharedPreferences prefs = requireContext().getSharedPreferences(BLOCK_PREFS, Context.MODE_PRIVATE);
         return prefs.getInt(KEY_BLOCKED_ATTEMPTS, 0);
     }
@@ -146,6 +171,7 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
     }
 
     private int getTodayExternalUsageMinutes() {
+        if (!isAdded()) return 0;
         UsageStatsManager usageStatsManager =
                 (UsageStatsManager) requireContext().getSystemService(Context.USAGE_STATS_SERVICE);
         if (usageStatsManager == null) {
@@ -192,26 +218,25 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
 
     private String buildDailyChart(List<DailyStats> stats) {
         if (stats == null || stats.isEmpty()) {
-            return "Bieu do 7 ngay\nChua co du lieu";
+            return "Biểu đồ 7 ngày\nChưa có dữ liệu";
         }
 
-        Collections.reverse(stats);
+        // Logic vẽ biểu đồ dạng Text đơn giản
         int maxMinutes = 1;
         for (DailyStats item : stats) {
             maxMinutes = Math.max(maxMinutes, item.getTotalMinutes());
         }
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Bieu do 7 ngay (phut)\n");
+        builder.append("Biểu đồ 7 ngày (phút)\n");
         for (DailyStats item : stats) {
-            int barLength = Math.max(1, Math.round((item.getTotalMinutes() * 16f) / maxMinutes));
+            int barLength = Math.max(0, Math.round((item.getTotalMinutes() * 16f) / maxMinutes));
             builder.append(String.format(
                     Locale.getDefault(),
-                    "%s | %-16s %3d m (%d phien)\n",
+                    "%s | %-16s %3d m\n",
                     item.getDateLabel(),
                     repeat("#", barLength),
-                    item.getTotalMinutes(),
-                    item.getSessionCount()
+                    item.getTotalMinutes()
             ));
         }
 

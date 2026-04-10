@@ -116,7 +116,7 @@ public class PomodoroService extends Service {
 		if (isRunning && timeLeftMs > 0L) {
 			if (isFocus) {
 				setFocusMode(true);
-//				startFocusMusicIfEnabled();
+				startFocusMusicIfEnabled();
 			}
 			startTimer();
 		}
@@ -169,8 +169,8 @@ public class PomodoroService extends Service {
 			SessionManager.startSession();
 			sessionInProgress = true;
 			setFocusMode(true);
-//			startFocusMusicIfEnabled();
-			notifyPhaseEvent("Bắt đầu tập trung", "Đã bắt đầu phiên pomodoro mới");
+			startFocusMusicIfEnabled();
+			notifyPhaseEvent("Bat dau tap trung", "Da bat dau phien pomodoro moi");
 		}
 
 		if (timeLeftMs <= 0L) {
@@ -200,7 +200,7 @@ public class PomodoroService extends Service {
 		loadDurations();
 		if (isFocus) {
 			setFocusMode(true);
-//			startFocusMusicIfEnabled();
+			startFocusMusicIfEnabled();
 		}
 		startTimer();
 	}
@@ -223,8 +223,6 @@ public class PomodoroService extends Service {
 		cancelTimer();
 		isRunning = false;
 		timeLeftMs = getCurrentPhaseDurationMs();
-		// SỬA LỖI: Reset trạng thái phiên để nút Bắt đầu được kích hoạt lại
-		sessionInProgress = false;
 
 		if (isFocus) {
 			setFocusMode(false);
@@ -249,7 +247,7 @@ public class PomodoroService extends Service {
 		if (!preferenceHelper.isMusicEnabled()) {
 			stopFocusMusic();
 		} else if (isRunning && isFocus) {
-//			startFocusMusicIfEnabled();
+			startFocusMusicIfEnabled();
 		}
 	}
 
@@ -284,19 +282,19 @@ public class PomodoroService extends Service {
 			sessionInProgress = false;
 			setFocusMode(false);
 			stopFocusMusic();
-			notifyPhaseEvent("Hoàn thành phiên", "Bạn vừa hoàn thành một phiên tập trung");
+			notifyPhaseEvent("Hoan thanh phien", "Ban vua hoan thanh mot phien tap trung");
 
 			isFocus = false;
 			timeLeftMs = getCurrentBreakTimeMs();
-			notifyPhaseEvent("Bắt đầu nghỉ", "Đến giờ nghỉ ngơi để phục hồi");
+			notifyPhaseEvent("Bat dau nghi", "Den gio nghi ngoi de phuc hoi");
 			startTimer();
 		} else {
 			isFocus = true;
 			SessionManager.startSession();
 			sessionInProgress = true;
 			setFocusMode(true);
-//			startFocusMusicIfEnabled();
-			notifyPhaseEvent("Bắt đầu tập trung", "Bắt đầu phiên tiếp theo");
+			startFocusMusicIfEnabled();
+			notifyPhaseEvent("Bat dau tap trung", "Bat dau phien tiep theo");
 
 			timeLeftMs = focusTimeMs;
 			startTimer();
@@ -343,20 +341,20 @@ public class PomodoroService extends Service {
 		}
 	}
 
-//	private void startFocusMusicIfEnabled() {
-//		if (!preferenceHelper.isMusicEnabled()) {
-//			return;
-//		}
-//		if (focusMediaPlayer != null) {
-//			return;
-//		}
-//
-//		focusMediaPlayer = MediaPlayer.create(this, R.raw.stop_right_there);
-//		if (focusMediaPlayer != null) {
-//			focusMediaPlayer.setLooping(true);
-//			focusMediaPlayer.start();
-//		}
-//	}
+	private void startFocusMusicIfEnabled() {
+		if (!preferenceHelper.isMusicEnabled()) {
+			return;
+		}
+		if (focusMediaPlayer != null) {
+			return;
+		}
+
+		focusMediaPlayer = MediaPlayer.create(this, R.raw.stop_right_there);
+		if (focusMediaPlayer != null) {
+			focusMediaPlayer.setLooping(true);
+			focusMediaPlayer.start();
+		}
+	}
 
 	private void stopFocusMusic() {
 		if (focusMediaPlayer != null) {
@@ -445,13 +443,13 @@ public class PomodoroService extends Service {
 	}
 
 	private Notification buildNotification() {
-		String phase = isFocus ? "Tập trung" : "Nghỉ";
+		String phase = isFocus ? "Tap trung" : "Nghi";
 		String timerText = formatTime(timeLeftMs);
 		String content = phase + " - " + timerText;
 
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
 				.setSmallIcon(R.mipmap.ic_launcher)
-				.setContentTitle("Pomodoro đang chạy")
+				.setContentTitle("Pomodoro dang chay")
 				.setContentText(content)
 				.setOnlyAlertOnce(true)
 				.setOngoing(true)
