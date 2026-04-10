@@ -52,6 +52,10 @@ public class FocusSession {
     public int getActualDuration() { return actualDuration; }
     public void setActualDuration(int actualDuration) { this.actualDuration = actualDuration; }
 
+    // Backward-compatible aliases used by legacy UI/statistics code.
+    public int getDurationMinutes() { return actualDuration; }
+    public void setDurationMinutes(int durationMinutes) { this.actualDuration = durationMinutes; }
+
     public int getPointsEarned() { return pointsEarned; }
     public void setPointsEarned(int pointsEarned) { this.pointsEarned = pointsEarned; }
 

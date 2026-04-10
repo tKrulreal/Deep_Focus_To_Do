@@ -166,7 +166,7 @@ public class PomodoroService extends Service {
 
 		loadDurations();
 		if (isFocus && !sessionInProgress) {
-			SessionManager.startSession();
+			SessionManager.startSession(this, "FOCUS", getFocusPlannedMinutes());
 			sessionInProgress = true;
 			setFocusMode(true);
 			startFocusMusicIfEnabled();
@@ -208,7 +208,7 @@ public class PomodoroService extends Service {
 	private void handleStop() {
 		cancelTimer();
 		if (isFocus && sessionInProgress) {
-			SessionManager.recordSession(this, false);
+			SessionManager.recordSession(this, getCurrentFocusDurationMinutes(), false);
 		}
 
 		isRunning = false;
@@ -276,7 +276,7 @@ public class PomodoroService extends Service {
 
 		if (isFocus) {
 			if (sessionInProgress) {
-				SessionManager.recordSession(this, true);
+				SessionManager.recordSession(this, getFocusPlannedMinutes(), true);
 			}
 			completedFocusSessions++;
 			sessionInProgress = false;
@@ -290,7 +290,7 @@ public class PomodoroService extends Service {
 			startTimer();
 		} else {
 			isFocus = true;
-			SessionManager.startSession();
+			SessionManager.startSession(this, "FOCUS", getFocusPlannedMinutes());
 			sessionInProgress = true;
 			setFocusMode(true);
 			startFocusMusicIfEnabled();
@@ -471,10 +471,7 @@ public class PomodoroService extends Service {
 		Intent intent = new Intent(this, PomodoroService.class);
 		intent.setAction(action);
 
-		int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			flags |= PendingIntent.FLAG_IMMUTABLE;
-		}
+		int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
 
 		return PendingIntent.getService(this, action.hashCode(), intent, flags);
 	}
@@ -484,6 +481,17 @@ public class PomodoroService extends Service {
 		int minutesPart = seconds / 60;
 		int secondsPart = seconds % 60;
 		return String.format(Locale.getDefault(), "%02d:%02d", minutesPart, secondsPart);
+	}
+
+	private int getFocusPlannedMinutes() {
+		return (int) Math.max(1L, focusTimeMs / 60000L);
+	}
+
+	private int getCurrentFocusDurationMinutes() {
+		int plannedMinutes = Math.max(1, preferenceHelper.getSessionPlannedDuration());
+		long plannedMs = plannedMinutes * 60_000L;
+		long elapsedMs = Math.max(0L, plannedMs - Math.max(0L, timeLeftMs));
+		return (int) (elapsedMs / 60_000L);
 	}
 
 	@Override

@@ -25,13 +25,14 @@ import com.example.deepfocustodo.adapters.TaskAdapter;
 import com.example.deepfocustodo.database.AppDatabase;
 import com.example.deepfocustodo.models.Task;
 import com.example.deepfocustodo.services.PomodoroService;
+import com.example.deepfocustodo.utils.AppExecutors;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.example.deepfocustodo.utils.SessionManager;
 
 import java.util.List;
 import java.util.Locale;
 
-public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickListener, TabRefreshable {
+public class HomeFragment extends Fragment implements TabRefreshable {
 
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 2001;
     private static final int FOCUS_SESSIONS_PER_CYCLE = 4;
@@ -60,6 +61,28 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
     private int completedFocusSessions;
 
     private boolean receiverRegistered;
+
+    private final TaskAdapter.OnTaskClickListener taskClickListener = new TaskAdapter.OnTaskClickListener() {
+        @Override
+        public void onTaskCheckChanged(Task task, boolean isChecked) {
+            HomeFragment.this.onTaskCheckChanged(task, isChecked);
+        }
+
+        @Override
+        public void onDeleteClick(Task task) {
+            HomeFragment.this.onDeleteClick(task);
+        }
+
+        @Override
+        public void onTaskClick(Task task) {
+            HomeFragment.this.onTaskClick(task);
+        }
+
+        @Override
+        public void onTaskLongClick(Task task) {
+            HomeFragment.this.onTaskLongClick(task);
+        }
+    };
 
     private final BroadcastReceiver timerReceiver = new BroadcastReceiver() {
         @Override
@@ -98,7 +121,9 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         btnStart = view.findViewById(R.id.btnStart);
         btnPause = view.findViewById(R.id.btnPause);
         btnStop = view.findViewById(R.id.btnStop);
-        btnReset = view.findViewById(R.id.btnReset);
+        // Reuse the existing resume button slot as reset in this screen layout.
+        btnReset = view.findViewById(R.id.btnResume);
+        btnReset.setText("Reset");
         btnViewHistory = view.findViewById(R.id.btnViewHistory);
         tvTimer = view.findViewById(R.id.tvTimer);
         tvMode = view.findViewById(R.id.tvMode);
@@ -205,20 +230,28 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
 
         if (timeLeftMs <= 0L || (!isRunning && !hasProgress)) {
             timeLeftMs = phaseDuration;
-        } else if (!isRunning && hasProgress) {
-            timeLeftMs = Math.min(timeLeftMs, phaseDuration);
         }
     }
 
     private void setupTaskList() {
         recyclerTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
-        taskAdapter = new TaskAdapter(this);
+        taskAdapter = new TaskAdapter(taskClickListener);
         recyclerTasks.setAdapter(taskAdapter);
     }
 
     private void loadTasks() {
-        List<Task> tasks = db.taskDao().getTasksByStatus(false);
-        taskAdapter.setTasks(tasks);
+        AppExecutors.diskIO().execute(() -> {
+            List<Task> tasks = db.taskDao().getTasksByStatus(false);
+            if (!isAdded()) {
+                return;
+            }
+            AppExecutors.mainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                taskAdapter.setTasks(tasks, requireContext());
+            });
+        });
     }
 
     private void loadDurations() {
@@ -262,6 +295,11 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         btnPause.setText(isRunning ? "Tạm dừng" : "Tiếp tục");
         btnStop.setEnabled(isRunning || sessionInProgress || hasProgress);
         btnReset.setEnabled(!isRunning && hasProgress);
+
+        btnStart.setVisibility(!isRunning && !hasProgress ? android.view.View.VISIBLE : android.view.View.GONE);
+        btnPause.setVisibility((isRunning || canResume) ? android.view.View.VISIBLE : android.view.View.GONE);
+        btnStop.setVisibility((isRunning || hasProgress || sessionInProgress) ? android.view.View.VISIBLE : android.view.View.GONE);
+        btnReset.setVisibility((!isRunning && hasProgress) ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -275,26 +313,43 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST_CODE);
     }
 
-    @Override
-    public void onTaskCheckChanged(Task task, boolean isChecked) {
-        task.setCompleted(isChecked);
-        db.taskDao().updateTask(task);
-        loadTasks();
+    private void onTaskCheckChanged(Task task, boolean isChecked) {
+        AppExecutors.diskIO().execute(() -> {
+            task.setCompleted(isChecked);
+            task.setUpdatedAt(System.currentTimeMillis());
+            db.taskDao().updateTask(task);
+            loadTasks();
+        });
     }
 
-    @Override
-    public void onDeleteClick(Task task) {
-        db.taskDao().deleteTask(task);
-        Integer selected = SessionManager.getSelectedTaskId();
-        if (selected != null && selected == task.getId()) {
-            SessionManager.clearSelectedTask();
+    private void onDeleteClick(Task task) {
+        Context appContext = requireContext().getApplicationContext();
+        AppExecutors.diskIO().execute(() -> {
+            db.taskDao().deleteTask(task);
+            Integer selected = SessionManager.getSelectedTaskId(appContext);
+            if (selected != null && selected == task.getId()) {
+                SessionManager.clearSelectedTask(appContext);
+            }
+            loadTasks();
+        });
+    }
+
+    private void onTaskClick(Task task) {
+        if (task.isCompleted()) {
+            Toast.makeText(requireContext(), "Khong the chon task da hoan thanh", Toast.LENGTH_SHORT).show();
+            return;
         }
+        SessionManager.setSelectedTaskId(requireContext(), task.getId());
+        Toast.makeText(requireContext(), "Da chon task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
         loadTasks();
     }
 
-    @Override
-    public void onTaskClick(Task task) {
-        SessionManager.setSelectedTaskId(task.getId());
-        Toast.makeText(requireContext(), "Da chon task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+    private void onTaskLongClick(Task task) {
+        Integer selected = SessionManager.getSelectedTaskId(requireContext());
+        if (selected != null && selected.equals(task.getId())) {
+            SessionManager.clearSelectedTask(requireContext());
+            Toast.makeText(requireContext(), "Da bo chon task", Toast.LENGTH_SHORT).show();
+            loadTasks();
+        }
     }
 }
