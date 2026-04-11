@@ -1,12 +1,5 @@
 <resources>
     <string name="app_name">Deep Focus To Do</string>
-    <string name="_25_00">25:00</string>
-    <string name="focus">FOCUS</string>
-    <string name="start">Start</string>
-    <string name="pause">Pause</string>
-    <string name="reset">Reset</string>
-    <string name="tasks">Tasks</string>
-    <string name="xem_l_ch_s">Xem lịch sử</string>
     <string name="history_title">Lich su tap trung</string>
     <string name="history_subtitle">Theo doi cac phien da hoan thanh</string>
     <string name="history_empty">Chua co du lieu lich su</string>

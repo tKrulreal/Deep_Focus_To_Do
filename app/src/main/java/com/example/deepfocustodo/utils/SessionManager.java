@@ -15,6 +15,7 @@ public class SessionManager {
     private static final String TAG = "SessionManager";
     private static final int MINIMUM_SESSION_SECONDS = 10;
     public static final String ACTION_TASK_REACHED_GOAL = "com.example.deepfocustodo.action.TASK_REACHED_GOAL";
+    public static final String ACTION_TASK_PROGRESS_UPDATED = "com.example.deepfocustodo.action.TASK_PROGRESS_UPDATED";
     public static final String EXTRA_TASK_ID = "EXTRA_TASK_ID";
 
     public static void setSelectedTaskId(Context context, Integer taskId) {
@@ -109,6 +110,13 @@ public class SessionManager {
                 );
 
                 db.focusSessionDao().insertSession(session);
+
+                if (isCompleted && "FOCUS".equals(type) && taskId != null) {
+                    Intent progressIntent = new Intent(ACTION_TASK_PROGRESS_UPDATED);
+                    progressIntent.setPackage(context.getPackageName());
+                    progressIntent.putExtra(EXTRA_TASK_ID, taskId);
+                    context.sendBroadcast(progressIntent);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error recording session", e);
             }

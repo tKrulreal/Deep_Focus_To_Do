@@ -33,7 +33,6 @@ import com.example.deepfocustodo.utils.AppExecutors;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.example.deepfocustodo.utils.SessionManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import androidx.lifecycle.LiveData;
 import java.util.List;
 import java.util.Locale;
 
@@ -46,7 +45,6 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     private Button btnStart;
     private Button btnPause;
     private Button btnStop;
-    private Button btnViewHistory;
     private ImageButton btnCancelTask;
     private TextView tvTimer;
     private TextView tvMode;
@@ -100,23 +98,26 @@ public class HomeFragment extends Fragment implements TabRefreshable {
                 return;
             }
 
-            boolean previousIsFocus = isFocus;
-            int previousCompletedFocus = completedFocusSessions;
-
             timeLeftMs = intent.getLongExtra(PomodoroService.EXTRA_TIME_LEFT, timeLeftMs);
             isRunning = intent.getBooleanExtra(PomodoroService.EXTRA_IS_RUNNING, isRunning);
             isFocus = intent.getBooleanExtra(PomodoroService.EXTRA_IS_FOCUS, isFocus);
             completedFocusSessions = intent.getIntExtra(PomodoroService.EXTRA_COMPLETED_FOCUS, completedFocusSessions);
             sessionInProgress = intent.getBooleanExtra(PomodoroService.EXTRA_SESSION_IN_PROGRESS, sessionInProgress);
 
-            boolean justCompletedFocus = previousIsFocus && !isFocus && completedFocusSessions > previousCompletedFocus;
-            if (justCompletedFocus) {
-                loadHeaderInfo();
-            }
-
             updateTimerText();
             updateModeText();
             updateButtonStates();
+        }
+    };
+
+    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!SessionManager.ACTION_TASK_PROGRESS_UPDATED.equals(intent.getAction())) {
+                return;
+            }
+            loadTasks();
+            loadHeaderInfo();
         }
     };
 
@@ -150,7 +151,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         btnStart = view.findViewById(R.id.btnStart);
         btnPause = view.findViewById(R.id.btnPause);
         btnStop = view.findViewById(R.id.btnStop);
-        btnViewHistory = view.findViewById(R.id.btnViewHistory);
+        Button btnViewHistory = view.findViewById(R.id.btnViewHistory);
         btnCancelTask = view.findViewById(R.id.btnCancelTask);
         tvTimer = view.findViewById(R.id.tvTimer);
         tvMode = view.findViewById(R.id.tvMode);
@@ -260,6 +261,9 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         IntentFilter goalFilter = new IntentFilter(SessionManager.ACTION_TASK_REACHED_GOAL);
         ContextCompat.registerReceiver(requireContext(), goalReceiver, goalFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
+        IntentFilter progressFilter = new IntentFilter(SessionManager.ACTION_TASK_PROGRESS_UPDATED);
+        ContextCompat.registerReceiver(requireContext(), progressReceiver, progressFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
+
         receiverRegistered = true;
     }
 
@@ -269,6 +273,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         }
         requireContext().unregisterReceiver(timerReceiver);
         requireContext().unregisterReceiver(goalReceiver);
+        requireContext().unregisterReceiver(progressReceiver);
         receiverRegistered = false;
     }
 

@@ -1,6 +1,10 @@
 package com.example.deepfocustodo.fragments;
 
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -53,6 +58,17 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     private final List<Task> allTasksCache = new ArrayList<>();
     private int activeFilter = FILTER_ACTIVE;
     private String searchQuery = "";
+    private boolean progressReceiverRegistered;
+
+    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!SessionManager.ACTION_TASK_PROGRESS_UPDATED.equals(intent.getAction())) {
+                return;
+            }
+            loadData();
+        }
+    };
 
     public TasksFragment() {
     }
@@ -92,9 +108,41 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        registerProgressReceiver();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        unregisterProgressReceiver();
+    }
+
+    @Override
     public void onTabSelected() {
         if (!isAdded() || getView() == null) return;
         loadData();
+    }
+
+    private void registerProgressReceiver() {
+        if (progressReceiverRegistered || !isAdded()) {
+            return;
+        }
+        IntentFilter progressFilter = new IntentFilter(SessionManager.ACTION_TASK_PROGRESS_UPDATED);
+        ContextCompat.registerReceiver(requireContext(), progressReceiver, progressFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
+        progressReceiverRegistered = true;
+    }
+
+    private void unregisterProgressReceiver() {
+        if (!progressReceiverRegistered) {
+            return;
+        }
+        Context context = getContext();
+        if (context != null) {
+            context.unregisterReceiver(progressReceiver);
+        }
+        progressReceiverRegistered = false;
     }
 
     private void setupRecyclerView() {
