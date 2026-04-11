@@ -615,34 +615,6 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
         });
     }
 
-    private String buildDailyChart(List<DailyStats> stats) {
-        if (stats == null || stats.isEmpty()) {
-            return "Bieu do 7 ngay\nChua co du lieu";
-        }
-
-        Collections.reverse(stats);
-        int maxMinutes = 1;
-        for (DailyStats item : stats) {
-            maxMinutes = Math.max(maxMinutes, item.getTotalMinutes());
-        }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("Bieu do 7 ngay (phut)\n");
-        for (DailyStats item : stats) {
-            int barLength = Math.max(1, Math.round((item.getTotalMinutes() * 16f) / maxMinutes));
-            builder.append(String.format(
-                    Locale.getDefault(),
-                    "%s | %-16s %3d m (%d phien)\n",
-                    item.getDateLabel(),
-                    repeat("#", barLength),
-                    item.getTotalMinutes(),
-                    item.getSessionCount()
-            ));
-        }
-
-        return builder.toString().trim();
-    }
-
     private String repeat(String token, int count) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < count; i++) {
