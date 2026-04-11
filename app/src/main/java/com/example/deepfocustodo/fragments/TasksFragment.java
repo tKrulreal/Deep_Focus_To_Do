@@ -227,7 +227,7 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
 
         new AlertDialog.Builder(requireContext())
                 .setView(dialogView)
-                .setPositiveButton("Save", (dialog, which) -> {
+                .setPositiveButton("Lưu", (dialog, which) -> {
                     String title = etTitle.getText().toString().trim();
                     String desc = etDesc.getText().toString().trim();
                     int sessions = npSessions.getValue();
@@ -255,7 +255,7 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                         Toast.makeText(requireContext(), "Title required", Toast.LENGTH_SHORT).show();
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Hủy", null)
                 .show();
     }
 

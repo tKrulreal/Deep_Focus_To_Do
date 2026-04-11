@@ -1,6 +1,9 @@
 package com.example.deepfocustodo.utils;
 
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+
 import com.example.deepfocustodo.database.AppDatabase;
 import com.example.deepfocustodo.models.FocusSession;
 import com.example.deepfocustodo.models.Task;
@@ -9,7 +12,10 @@ import java.util.Calendar;
 
 public class SessionManager {
 
+    private static final String TAG = "SessionManager";
     private static final int MINIMUM_SESSION_SECONDS = 10;
+    public static final String ACTION_TASK_REACHED_GOAL = "com.example.deepfocustodo.action.TASK_REACHED_GOAL";
+    public static final String EXTRA_TASK_ID = "EXTRA_TASK_ID";
 
     public static void setSelectedTaskId(Context context, Integer taskId) {
         new PreferenceHelper(context).setSelectedTaskId(taskId);
@@ -21,11 +27,6 @@ public class SessionManager {
 
     public static void startSession(Context context, String type, int plannedDuration) {
         new PreferenceHelper(context).saveSessionState(System.currentTimeMillis(), type, plannedDuration);
-    }
-    
-    // For cases where we don't have context in some legacy service calls
-    public static void startSession(String type, int plannedDuration) {
-        // This should be deprecated soon
     }
 
     public static boolean isSessionRunning(Context context) {
@@ -46,12 +47,11 @@ public class SessionManager {
     public static void recordSession(Context context, int actualDurationMinutes, boolean isCompleted) {
         PreferenceHelper prefs = new PreferenceHelper(context);
         final long start = prefs.getSessionStartTime();
-        
-        if (start == 0) return; // No session started
+
+        if (start == 0) return;
 
         final long end = System.currentTimeMillis();
-        
-        // Safety: Avoid recording tiny sessions (trash data)
+
         if (!isCompleted && (end - start) < (MINIMUM_SESSION_SECONDS * 1000)) {
             prefs.clearSessionState();
             return;
@@ -60,13 +60,13 @@ public class SessionManager {
         final Integer taskId = prefs.getSelectedTaskId();
         final String type = prefs.getSessionType();
         final int planned = prefs.getSessionPlannedDuration();
-        
+
         prefs.clearSessionState();
 
         AppExecutors.diskIO().execute(() -> {
             try {
                 AppDatabase db = AppDatabase.getInstance(context);
-                
+
                 Task task = null;
                 if (taskId != null) {
                     task = db.taskDao().getTaskById(taskId);
@@ -83,9 +83,17 @@ public class SessionManager {
                 int points = PointsCalculator.calculatePoints(actualDurationMinutes, isCompleted, type, task, sessionsToday);
                 String status = isCompleted ? "COMPLETED" : "FAILED";
 
-                if (isCompleted && "FOCUS".equals(type)) {
-                    if (taskId != null) {
-                        db.taskDao().incrementCompletedSessions(taskId, end);
+                // Logic increment và check goal
+                if (isCompleted && "FOCUS".equals(type) && taskId != null) {
+                    db.taskDao().incrementCompletedSessions(taskId);
+                    
+                    Task updatedTask = db.taskDao().getTaskById(taskId);
+                    if (updatedTask != null && updatedTask.getEstimatedSessions() > 0 && updatedTask.getCompletedSessions() >= updatedTask.getEstimatedSessions()) {
+                        Log.d(TAG, "Task reached goal: " + taskId + " (" + updatedTask.getCompletedSessions() + "/" + updatedTask.getEstimatedSessions() + ")");
+                        Intent intent = new Intent(ACTION_TASK_REACHED_GOAL);
+                        intent.setPackage(context.getPackageName());
+                        intent.putExtra(EXTRA_TASK_ID, (int) taskId);
+                        context.sendBroadcast(intent);
                     }
                 }
 
@@ -102,7 +110,7 @@ public class SessionManager {
 
                 db.focusSessionDao().insertSession(session);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error recording session", e);
             }
         });
     }

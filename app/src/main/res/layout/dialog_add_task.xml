@@ -15,7 +15,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="New Task"
+            android:text="Nhiệm vụ mới"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -23,7 +23,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Task Name">
+            android:hint="Tên Nhiệm vụ">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etTaskTitle"
@@ -37,7 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Description (Optional)">
+            android:hint="Mô tả (nếu có)">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etTaskDesc"
@@ -52,7 +52,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Priority"
+            android:text="Mức độ"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -70,7 +70,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Low" />
+                android:text="Thấp" />
 
             <Button
                 android:id="@+id/btnMedium"
@@ -78,7 +78,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Med" />
+                android:text="Trung bình" />
 
             <Button
                 android:id="@+id/btnHigh"
@@ -86,7 +86,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="High" />
+                android:text="Cao" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <LinearLayout
@@ -100,7 +100,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Estimated Pomodoros"
+                android:text="Số Pomodoro ước tính"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 

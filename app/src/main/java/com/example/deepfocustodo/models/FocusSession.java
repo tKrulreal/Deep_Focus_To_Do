@@ -1,10 +1,22 @@
 package com.example.deepfocustodo.models;
 
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "focus_sessions")
+
+@Entity(
+        tableName = "focus_sessions",
+        foreignKeys = @ForeignKey(
+                entity = Task.class,
+                parentColumns = "id",
+                childColumns = "taskId",
+                onDelete = ForeignKey.CASCADE
+        ),
+        indices = {@Index("taskId")}
+)
 public class FocusSession {
 
     @PrimaryKey(autoGenerate = true)

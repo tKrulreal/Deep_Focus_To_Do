@@ -55,35 +55,52 @@
                 android:textSize="13sp" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvPriority"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@android:color/transparent"
-                    android:text="High"
-                    android:textColor="?attr/colorPrimary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <View
-                    android:layout_width="4dp"
+                    <TextView
+                        android:id="@+id/tvPriority"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:text="High"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="4dp"
+                        android:layout_marginHorizontal="6dp"
+                        android:background="@android:drawable/presence_online" />
+
+                    <TextView
+                        android:id="@+id/tvSessions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0/3 sessions"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/pbTaskProgress"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
                     android:layout_height="4dp"
-                    android:layout_marginHorizontal="6dp"
-                    android:background="@android:drawable/presence_online" />
-
-                <TextView
-                    android:id="@+id/tvSessions"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0/3 Pomodoros"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="11sp" />
+                    android:layout_marginTop="4dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="?attr/colorPrimary" />
             </LinearLayout>
 
             <TextView

@@ -8,6 +8,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -30,12 +32,14 @@ import com.example.deepfocustodo.services.PomodoroService;
 import com.example.deepfocustodo.utils.AppExecutors;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.example.deepfocustodo.utils.SessionManager;
-
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import androidx.lifecycle.LiveData;
 import java.util.List;
 import java.util.Locale;
 
 public class HomeFragment extends Fragment implements TabRefreshable {
 
+    private static final String TAG = "HomeFragment";
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 2001;
     private static final int FOCUS_SESSIONS_PER_CYCLE = 4;
 
@@ -107,13 +111,24 @@ public class HomeFragment extends Fragment implements TabRefreshable {
 
             boolean justCompletedFocus = previousIsFocus && !isFocus && completedFocusSessions > previousCompletedFocus;
             if (justCompletedFocus) {
-                // Refresh points/task header right after a completed focus session is recorded.
                 loadHeaderInfo();
             }
 
             updateTimerText();
             updateModeText();
             updateButtonStates();
+        }
+    };
+
+    private final BroadcastReceiver goalReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (SessionManager.ACTION_TASK_REACHED_GOAL.equals(intent.getAction())) {
+                int taskId = intent.getIntExtra(SessionManager.EXTRA_TASK_ID, -1);
+                if (taskId != -1) {
+                    showTaskGoalReachedDialog(taskId);
+                }
+            }
         }
     };
 
@@ -158,7 +173,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         updateModeText();
         updateButtonStates();
 
-        btnStart.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_START));
+        btnStart.setOnClickListener(v -> handleStartClick());
         btnPause.setOnClickListener(v -> dispatchServiceAction(isRunning ? PomodoroService.ACTION_PAUSE : PomodoroService.ACTION_RESUME));
         btnStop.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_STOP));
         btnViewHistory.setOnClickListener(v -> startActivity(new Intent(requireContext(), HistoryActivity.class)));
@@ -167,6 +182,34 @@ public class HomeFragment extends Fragment implements TabRefreshable {
             loadTasks();
             loadHeaderInfo();
         });
+    }
+
+    private void handleStartClick() {
+        Integer selectedTaskId = SessionManager.getSelectedTaskId(requireContext());
+        boolean hasIncompleteTasks = taskAdapter != null && taskAdapter.getItemCount() > 0;
+
+        if (selectedTaskId == null && hasIncompleteTasks) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Bắt đầu tập trung")
+                    .setMessage("Bạn chưa chọn nhiệm vụ cho phiên này. Bạn có muốn chọn một nhiệm vụ từ danh sách không?")
+                    .setIcon(R.drawable.baseline_info_outline_24)
+                    .setNeutralButton("Để sau", (dialog, which) -> {
+                        Log.w(TAG, "User started session without task");
+                        dispatchServiceAction(PomodoroService.ACTION_START);
+                    })
+                    .setNegativeButton("Bắt đầu luôn", (dialog, which) -> {
+                        dispatchServiceAction(PomodoroService.ACTION_START);
+                    })
+                    .setPositiveButton("Chọn nhiệm vụ", (dialog, which) -> {
+                        if (recyclerTasks != null) {
+                            recyclerTasks.smoothScrollToPosition(0);
+                            Toast.makeText(requireContext(), "Vui lòng chọn một nhiệm vụ dưới đây", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .show();
+        } else {
+            dispatchServiceAction(PomodoroService.ACTION_START);
+        }
     }
 
     @Override
@@ -213,6 +256,10 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         }
         IntentFilter filter = new IntentFilter(PomodoroService.ACTION_STATE);
         ContextCompat.registerReceiver(requireContext(), timerReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
+
+        IntentFilter goalFilter = new IntentFilter(SessionManager.ACTION_TASK_REACHED_GOAL);
+        ContextCompat.registerReceiver(requireContext(), goalReceiver, goalFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
+
         receiverRegistered = true;
     }
 
@@ -221,6 +268,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
             return;
         }
         requireContext().unregisterReceiver(timerReceiver);
+        requireContext().unregisterReceiver(goalReceiver);
         receiverRegistered = false;
     }
 
@@ -301,11 +349,11 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     private void loadDurations() {
         int focusMinutes = Math.max(1, preferenceHelper.getFocusTime());
         int breakMinutes = Math.max(1, preferenceHelper.getBreakTime());
-        int longBreakMinutes = Math.max(1, preferenceHelper.getLongBreakTime());
+        int longBreakTimeMinutes = Math.max(1, preferenceHelper.getLongBreakTime());
 
         focusTimeMs = focusMinutes * 60L * 1000L;
         shortBreakTimeMs = breakMinutes * 60L * 1000L;
-        longBreakTimeMs = longBreakMinutes * 60L * 1000L;
+        longBreakTimeMs = longBreakTimeMinutes * 60L * 1000L;
     }
 
     private long getCurrentBreakTimeMs() {
@@ -334,8 +382,11 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         boolean hasProgress = timeLeftMs > 0L && timeLeftMs < phaseDuration;
         boolean canResume = !isRunning && sessionInProgress && hasProgress;
 
+        if (btnCancelTask != null) {
+            btnCancelTask.setVisibility((isRunning || canResume) ? View.GONE : View.VISIBLE);
+        }
+
         if (isRunning) {
-            // Running: show only Pause + Stop.
             btnStart.setVisibility(android.view.View.GONE);
             btnPause.setVisibility(android.view.View.VISIBLE);
             btnStop.setVisibility(android.view.View.VISIBLE);
@@ -346,7 +397,6 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         }
 
         if (canResume) {
-            // Paused: show Continue + Stop.
             btnStart.setVisibility(android.view.View.GONE);
             btnPause.setVisibility(android.view.View.VISIBLE);
             btnStop.setVisibility(android.view.View.VISIBLE);
@@ -356,7 +406,6 @@ public class HomeFragment extends Fragment implements TabRefreshable {
             return;
         }
 
-        // Idle: show only Start.
         btnStart.setVisibility(android.view.View.VISIBLE);
         btnPause.setVisibility(android.view.View.GONE);
         btnStop.setVisibility(android.view.View.GONE);
@@ -404,23 +453,89 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     }
 
     private void onTaskClick(Task task) {
-        if (task.isCompleted()) {
-            Toast.makeText(requireContext(), "Khong the chon task da hoan thanh", Toast.LENGTH_SHORT).show();
+        if (isSessionActive()) {
+            Toast.makeText(requireContext(), "Vui lòng ấn Dừng (Stop) phiên hiện tại để chọn nhiệm vụ khác!", Toast.LENGTH_SHORT).show();
             return;
         }
-        SessionManager.setSelectedTaskId(requireContext(), task.getId());
-        Toast.makeText(requireContext(), "Da chon task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+
+        if (task.isCompleted()) {
+            Toast.makeText(requireContext(), "Không thể chọn task đã hoàn thành", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Integer currentSelectedTaskId = SessionManager.getSelectedTaskId(requireContext());
+        if (currentSelectedTaskId != null && currentSelectedTaskId.equals(task.getId())) {
+            SessionManager.clearSelectedTask(requireContext());
+            Toast.makeText(requireContext(), "Đã bỏ chọn task", Toast.LENGTH_SHORT).show();
+        } else {
+            SessionManager.setSelectedTaskId(requireContext(), task.getId());
+            Toast.makeText(requireContext(), "Đã chọn task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+        }
+
         loadTasks();
         loadHeaderInfo();
     }
 
     private void onTaskLongClick(Task task) {
+        if (isSessionActive()) {
+            Toast.makeText(requireContext(), "Vui lòng ấn Dừng (Stop) phiên hiện tại trước khi hủy chọn!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Integer selected = SessionManager.getSelectedTaskId(requireContext());
         if (selected != null && selected.equals(task.getId())) {
             SessionManager.clearSelectedTask(requireContext());
-            Toast.makeText(requireContext(), "Da bo chon task", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Đã bỏ chọn task", Toast.LENGTH_SHORT).show();
             loadTasks();
             loadHeaderInfo();
         }
+    }
+
+    private boolean isSessionActive() {
+        long phaseDuration = isFocus ? focusTimeMs : getCurrentBreakTimeMs();
+        boolean hasProgress = timeLeftMs > 0L && timeLeftMs < phaseDuration;
+        boolean canResume = !isRunning && sessionInProgress && hasProgress;
+        return isRunning || canResume;
+    }
+
+    private void showTaskGoalReachedDialog(int taskId) {
+        AppExecutors.diskIO().execute(() -> {
+            Task task = db.taskDao().getTaskById(taskId);
+            if (task == null) return;
+
+            AppExecutors.mainThread(() -> {
+                if (!isAdded()) return;
+
+                String message = String.format(Locale.getDefault(),
+                        "Bạn đã hoàn thành %d/%d phiên của [%s]. Hoàn thành luôn nhiệm vụ này không?",
+                        task.getCompletedSessions(), task.getEstimatedSessions(), task.getTitle());
+
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Mục tiêu đã đạt!")
+                        .setMessage(message)
+                        .setPositiveButton("CÓ", (dialog, which) -> markTaskAsCompleted(task))
+                        .setNegativeButton("KHÔNG", (dialog, which) -> dialog.dismiss())
+                        .setCancelable(false)
+                        .show();
+            });
+        });
+    }
+
+    private void markTaskAsCompleted(Task task) {
+        AppExecutors.diskIO().execute(() -> {
+            long now = System.currentTimeMillis();
+            task.setCompleted(true);
+            task.setUpdatedAt(now);
+            task.setCompletedAt(now);
+            db.taskDao().updateTask(task);
+
+            SessionManager.clearIfSelected(requireContext().getApplicationContext(), task.getId());
+
+            AppExecutors.mainThread(() -> {
+                loadTasks();
+                loadHeaderInfo();
+                Toast.makeText(requireContext(), "Chúc mừng! Nhiệm vụ đã hoàn thành.", Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 }
