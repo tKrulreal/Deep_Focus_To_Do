@@ -4,137 +4,204 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:background="?attr/colorSurface"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="18dp"
+    android:paddingBottom="8dp">
 
     <TextView
         android:id="@+id/tvAppName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="FocusFlow"
-        android:textSize="28sp"
-        android:textStyle="bold"
+        android:text="Deep Focus"
+        android:textAppearance="@style/TextAppearance.DeepFocus.PageTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnViewHistory"
-        style="@style/Widget.Material3.Button.TextButton.Icon"
+        style="@style/Widget.Material3.Button.TonalButton.Icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Lịch sử"
         app:icon="@android:drawable/ic_menu_recent_history"
+        app:layout_constraintBottom_toBottomOf="@+id/tvAppName"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@+id/tvAppName" />
 
-    <LinearLayout
-        android:id="@+id/timerContainer"
+    <TextView
+        android:id="@+id/tvHomePoints"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@+id/controlsContainer"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvAppName"
-        app:layout_constraintVertical_chainStyle="packed">
+        android:layout_marginTop="4dp"
+        android:text="Points: 0"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@id/tvAppName"
+        app:layout_constraintTop_toBottomOf="@id/tvAppName" />
 
-        <TextView
-            android:id="@+id/tvTimer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="25:00"
-            android:textSize="80sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvMode"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:letterSpacing="0.1"
-            android:text="TẬP TRUNG"
-            android:textAllCaps="true"
-            android:textSize="18sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/controlsContainer"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSelectedTask"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:orientation="vertical"
-        android:gravity="center"
-        app:layout_constraintBottom_toTopOf="@+id/tvTaskHeader"
+        android:layout_marginTop="14dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/timerContainer">
+        app:layout_constraintTop_toBottomOf="@id/tvHomePoints"
+        app:strokeColor="?attr/colorOutline"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:padding="12dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStart"
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@android:drawable/ic_menu_edit"
+                    app:tint="?attr/colorPrimary" />
+
+            <TextView
+                android:id="@+id/tvCurrentTaskName"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
                 android:layout_weight="1"
-                android:text="Bắt đầu" />
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Nhiệm vụ hiện tại"
+                android:textColor="?attr/colorOnSurface"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnCancelTask"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Huy chon task"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/timerCard"
+        style="@style/Widget.DeepFocus.Card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardSelectedTask">
+
+        <LinearLayout
+            android:id="@+id/timerContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingVertical="24dp">
+
+            <TextView
+                android:id="@+id/tvTimer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="25:00"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="64sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:letterSpacing="0.08"
+                android:text="TẬP TRUNG"
+                android:textAllCaps="true"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <FrameLayout
+        android:id="@+id/controlsContainer"
+        android:layout_width="0dp"
+        android:layout_height="96dp"
+        android:layout_marginTop="14dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/timerCard">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStart"
+            style="@style/Widget.DeepFocus.Button.Primary"
+            android:layout_width="220dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:text="Bắt đầu" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPause"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.DeepFocus.Button.Secondary"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="8dp"
                 android:layout_weight="1"
-                android:text="Tạm dừng" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:gravity="center">
+                android:text="Tạm dừng"
+                android:textColor="?attr/colorPrimary"
+                android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStop"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.DeepFocus.Button.Secondary"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Dừng" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnReset"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="Đặt lại" />
+                android:text="Dừng"
+                android:textColor="?attr/colorPrimary"
+                android:visibility="gone" />
         </LinearLayout>
-    </LinearLayout>
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tvTaskHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="10dp"
         android:text="Nhiệm vụ"
-        android:textSize="20sp"
-        android:textStyle="bold"
+        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/controlsContainer" />
+        app:layout_constraintTop_toBottomOf="@id/controlsContainer" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerTasks"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvTaskHeader"
-        tools:listitem="@android:layout/simple_list_item_2" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTaskHeader"
+        tools:listitem="@layout/item_task" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

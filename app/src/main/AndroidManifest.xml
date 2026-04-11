@@ -1,21 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Kiểm tra app đang chạy -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
-    <!-- tạo màn hình chắn trên app khác -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- lấy danh sách ứng dụng trên điện thoại -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
-
-
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-
 
     <application
         android:allowBackup="true"
@@ -35,7 +29,7 @@
         <service
             android:name=".services.PomodoroService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|mediaPlayback" />
 
         <activity android:name=".activities.BlockedAppsActivity" />
         <activity android:name=".activities.BlockPermissionActivity"/>
@@ -45,6 +39,7 @@
             android:excludeFromRecents="true"
             android:screenOrientation="portrait"/>
         <activity android:name=".activities.HistoryActivity" />
+        
         <activity
             android:name=".activities.MainActivity"
             android:exported="true">

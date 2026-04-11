@@ -1,5 +1,6 @@
 package com.example.deepfocustodo.fragments;
 
+import android.app.DatePickerDialog;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
@@ -175,8 +176,24 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
             loadDayStatistics();
         });
 
+        tvTimeLabel.setOnClickListener(v -> showDatePicker());
+
         // Load dữ liệu mặc định lần đầu
         loadDayStatistics();
+    }
+
+    private void showDatePicker() {
+        int year = selectedDate.get(Calendar.YEAR);
+        int month = selectedDate.get(Calendar.MONTH);
+        int day = selectedDate.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog dialog = new DatePickerDialog(requireContext(), (view, y, m, d) -> {
+            selectedDate.set(Calendar.YEAR, y);
+            selectedDate.set(Calendar.MONTH, m);
+            selectedDate.set(Calendar.DAY_OF_MONTH, d);
+            loadDayStatistics();
+        }, year, month, day);
+        dialog.show();
     }
 
     @Override

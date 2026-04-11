@@ -9,11 +9,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -25,13 +27,14 @@ import com.example.deepfocustodo.adapters.TaskAdapter;
 import com.example.deepfocustodo.database.AppDatabase;
 import com.example.deepfocustodo.models.Task;
 import com.example.deepfocustodo.services.PomodoroService;
+import com.example.deepfocustodo.utils.AppExecutors;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.example.deepfocustodo.utils.SessionManager;
 
 import java.util.List;
 import java.util.Locale;
 
-public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickListener, TabRefreshable {
+public class HomeFragment extends Fragment implements TabRefreshable {
 
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 2001;
     private static final int FOCUS_SESSIONS_PER_CYCLE = 4;
@@ -39,11 +42,14 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
     private Button btnStart;
     private Button btnPause;
     private Button btnStop;
-    private Button btnReset;
     private Button btnViewHistory;
+    private ImageButton btnCancelTask;
     private TextView tvTimer;
     private TextView tvMode;
+    private TextView tvHomePoints;
+    private TextView tvCurrentTaskName;
     private RecyclerView recyclerTasks;
+    private CardView cardSelectedTask;
 
     private AppDatabase db;
     private PreferenceHelper preferenceHelper;
@@ -61,6 +67,28 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
 
     private boolean receiverRegistered;
 
+    private final TaskAdapter.OnTaskClickListener taskClickListener = new TaskAdapter.OnTaskClickListener() {
+        @Override
+        public void onTaskCheckChanged(Task task, boolean isChecked) {
+            HomeFragment.this.onTaskCheckChanged(task, isChecked);
+        }
+
+        @Override
+        public void onDeleteClick(Task task) {
+            HomeFragment.this.onDeleteClick(task);
+        }
+
+        @Override
+        public void onTaskClick(Task task) {
+            HomeFragment.this.onTaskClick(task);
+        }
+
+        @Override
+        public void onTaskLongClick(Task task) {
+            HomeFragment.this.onTaskLongClick(task);
+        }
+    };
+
     private final BroadcastReceiver timerReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -68,11 +96,20 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
                 return;
             }
 
+            boolean previousIsFocus = isFocus;
+            int previousCompletedFocus = completedFocusSessions;
+
             timeLeftMs = intent.getLongExtra(PomodoroService.EXTRA_TIME_LEFT, timeLeftMs);
             isRunning = intent.getBooleanExtra(PomodoroService.EXTRA_IS_RUNNING, isRunning);
             isFocus = intent.getBooleanExtra(PomodoroService.EXTRA_IS_FOCUS, isFocus);
             completedFocusSessions = intent.getIntExtra(PomodoroService.EXTRA_COMPLETED_FOCUS, completedFocusSessions);
             sessionInProgress = intent.getBooleanExtra(PomodoroService.EXTRA_SESSION_IN_PROGRESS, sessionInProgress);
+
+            boolean justCompletedFocus = previousIsFocus && !isFocus && completedFocusSessions > previousCompletedFocus;
+            if (justCompletedFocus) {
+                // Refresh points/task header right after a completed focus session is recorded.
+                loadHeaderInfo();
+            }
 
             updateTimerText();
             updateModeText();
@@ -98,11 +135,14 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         btnStart = view.findViewById(R.id.btnStart);
         btnPause = view.findViewById(R.id.btnPause);
         btnStop = view.findViewById(R.id.btnStop);
-        btnReset = view.findViewById(R.id.btnReset);
         btnViewHistory = view.findViewById(R.id.btnViewHistory);
+        btnCancelTask = view.findViewById(R.id.btnCancelTask);
         tvTimer = view.findViewById(R.id.tvTimer);
         tvMode = view.findViewById(R.id.tvMode);
+        tvHomePoints = view.findViewById(R.id.tvHomePoints);
+        tvCurrentTaskName = view.findViewById(R.id.tvCurrentTaskName);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
+        cardSelectedTask = view.findViewById(R.id.cardSelectedTask);
 
         db = AppDatabase.getInstance(requireContext());
         preferenceHelper = new PreferenceHelper(requireContext());
@@ -113,6 +153,7 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
 
         setupTaskList();
         loadTasks();
+        loadHeaderInfo();
         updateTimerText();
         updateModeText();
         updateButtonStates();
@@ -120,8 +161,12 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         btnStart.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_START));
         btnPause.setOnClickListener(v -> dispatchServiceAction(isRunning ? PomodoroService.ACTION_PAUSE : PomodoroService.ACTION_RESUME));
         btnStop.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_STOP));
-        btnReset.setOnClickListener(v -> dispatchServiceAction(PomodoroService.ACTION_RESET));
         btnViewHistory.setOnClickListener(v -> startActivity(new Intent(requireContext(), HistoryActivity.class)));
+        btnCancelTask.setOnClickListener(v -> {
+            SessionManager.clearSelectedTask(requireContext());
+            loadTasks();
+            loadHeaderInfo();
+        });
     }
 
     @Override
@@ -156,6 +201,7 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         loadDurations();
         loadStateFromService();
         loadTasks();
+        loadHeaderInfo();
         updateTimerText();
         updateModeText();
         updateButtonStates();
@@ -205,20 +251,51 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
 
         if (timeLeftMs <= 0L || (!isRunning && !hasProgress)) {
             timeLeftMs = phaseDuration;
-        } else if (!isRunning && hasProgress) {
-            timeLeftMs = Math.min(timeLeftMs, phaseDuration);
         }
     }
 
     private void setupTaskList() {
         recyclerTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
-        taskAdapter = new TaskAdapter(this);
+        taskAdapter = new TaskAdapter(taskClickListener);
         recyclerTasks.setAdapter(taskAdapter);
     }
 
     private void loadTasks() {
-        List<Task> tasks = db.taskDao().getTasksByStatus(false);
-        taskAdapter.setTasks(tasks);
+        AppExecutors.diskIO().execute(() -> {
+            List<Task> tasks = db.taskDao().getTasksByStatus(false);
+            if (!isAdded()) {
+                return;
+            }
+            AppExecutors.mainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                taskAdapter.setTasks(tasks, requireContext());
+            });
+        });
+    }
+
+    private void loadHeaderInfo() {
+        Context appContext = requireContext().getApplicationContext();
+        AppExecutors.diskIO().execute(() -> {
+            Integer totalPoints = db.focusSessionDao().getTotalPoints();
+            Integer selectedTaskId = SessionManager.getSelectedTaskId(appContext);
+            Task selectedTask = selectedTaskId != null ? db.taskDao().getTaskById(selectedTaskId) : null;
+
+            AppExecutors.mainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                tvHomePoints.setText(String.format(Locale.getDefault(), "Points: %d", totalPoints != null ? totalPoints : 0));
+
+                if (selectedTask != null && !selectedTask.isCompleted()) {
+                    cardSelectedTask.setVisibility(android.view.View.VISIBLE);
+                    tvCurrentTaskName.setText(selectedTask.getTitle());
+                } else {
+                    cardSelectedTask.setVisibility(android.view.View.GONE);
+                }
+            });
+        });
     }
 
     private void loadDurations() {
@@ -255,13 +332,35 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
     private void updateButtonStates() {
         long phaseDuration = isFocus ? focusTimeMs : getCurrentBreakTimeMs();
         boolean hasProgress = timeLeftMs > 0L && timeLeftMs < phaseDuration;
-        boolean canResume = !isRunning && timeLeftMs > 0L && hasProgress;
+        boolean canResume = !isRunning && sessionInProgress && hasProgress;
 
-        btnStart.setEnabled(!isRunning && !sessionInProgress && !hasProgress);
-        btnPause.setEnabled(isRunning || canResume);
-        btnPause.setText(isRunning ? "Tạm dừng" : "Tiếp tục");
-        btnStop.setEnabled(isRunning || sessionInProgress || hasProgress);
-        btnReset.setEnabled(!isRunning && hasProgress);
+        if (isRunning) {
+            // Running: show only Pause + Stop.
+            btnStart.setVisibility(android.view.View.GONE);
+            btnPause.setVisibility(android.view.View.VISIBLE);
+            btnStop.setVisibility(android.view.View.VISIBLE);
+            btnPause.setText("Tạm dừng");
+            btnPause.setEnabled(true);
+            btnStop.setEnabled(true);
+            return;
+        }
+
+        if (canResume) {
+            // Paused: show Continue + Stop.
+            btnStart.setVisibility(android.view.View.GONE);
+            btnPause.setVisibility(android.view.View.VISIBLE);
+            btnStop.setVisibility(android.view.View.VISIBLE);
+            btnPause.setText("Tiếp tục");
+            btnPause.setEnabled(true);
+            btnStop.setEnabled(true);
+            return;
+        }
+
+        // Idle: show only Start.
+        btnStart.setVisibility(android.view.View.VISIBLE);
+        btnPause.setVisibility(android.view.View.GONE);
+        btnStop.setVisibility(android.view.View.GONE);
+        btnStart.setEnabled(true);
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -275,26 +374,53 @@ public class HomeFragment extends Fragment implements TaskAdapter.OnTaskClickLis
         requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST_CODE);
     }
 
-    @Override
-    public void onTaskCheckChanged(Task task, boolean isChecked) {
-        task.setCompleted(isChecked);
-        db.taskDao().updateTask(task);
-        loadTasks();
+    private void onTaskCheckChanged(Task task, boolean isChecked) {
+        Context appContext = requireContext().getApplicationContext();
+        AppExecutors.diskIO().execute(() -> {
+            long now = System.currentTimeMillis();
+            task.setCompleted(isChecked);
+            task.setUpdatedAt(now);
+            task.setCompletedAt(isChecked ? now : 0L);
+            db.taskDao().updateTask(task);
+            if (isChecked) {
+                SessionManager.clearIfSelected(appContext, task.getId());
+            }
+            loadTasks();
+            loadHeaderInfo();
+        });
     }
 
-    @Override
-    public void onDeleteClick(Task task) {
-        db.taskDao().deleteTask(task);
-        Integer selected = SessionManager.getSelectedTaskId();
-        if (selected != null && selected == task.getId()) {
-            SessionManager.clearSelectedTask();
+    private void onDeleteClick(Task task) {
+        Context appContext = requireContext().getApplicationContext();
+        AppExecutors.diskIO().execute(() -> {
+            db.taskDao().deleteTask(task);
+            Integer selected = SessionManager.getSelectedTaskId(appContext);
+            if (selected != null && selected == task.getId()) {
+                SessionManager.clearSelectedTask(appContext);
+            }
+            loadTasks();
+            loadHeaderInfo();
+        });
+    }
+
+    private void onTaskClick(Task task) {
+        if (task.isCompleted()) {
+            Toast.makeText(requireContext(), "Khong the chon task da hoan thanh", Toast.LENGTH_SHORT).show();
+            return;
         }
+        SessionManager.setSelectedTaskId(requireContext(), task.getId());
+        Toast.makeText(requireContext(), "Da chon task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
         loadTasks();
+        loadHeaderInfo();
     }
 
-    @Override
-    public void onTaskClick(Task task) {
-        SessionManager.setSelectedTaskId(task.getId());
-        Toast.makeText(requireContext(), "Da chon task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+    private void onTaskLongClick(Task task) {
+        Integer selected = SessionManager.getSelectedTaskId(requireContext());
+        if (selected != null && selected.equals(task.getId())) {
+            SessionManager.clearSelectedTask(requireContext());
+            Toast.makeText(requireContext(), "Da bo chon task", Toast.LENGTH_SHORT).show();
+            loadTasks();
+            loadHeaderInfo();
+        }
     }
 }

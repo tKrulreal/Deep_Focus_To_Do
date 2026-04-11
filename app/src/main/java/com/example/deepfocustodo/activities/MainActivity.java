@@ -4,6 +4,8 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.fragments.HomeFragment;
@@ -16,145 +18,99 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNavigationView;
-    private Fragment homeFragment;
-    private Fragment tasksFragment;
-    private Fragment statisticsFragment;
-    private Fragment settingsFragment;
-    private Fragment activeFragment;
+      private Fragment activeFragment;
+
+      private static final String TAG_HOME = "tab_home";
+      private static final String TAG_TASKS = "tab_tasks";
+      private static final String TAG_STATS = "tab_stats";
+      private static final String TAG_SETTINGS = "tab_settings";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // SỬA LỖI: MainActivity phải sử dụng activity_main.xml làm layout chính
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
         if (savedInstanceState == null) {
-            homeFragment = new HomeFragment();
-            tasksFragment = new TasksFragment();
-            statisticsFragment = new StatisticsFragment();
-            settingsFragment = new SettingsFragment();
-
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .add(R.id.fragment_container, settingsFragment, "settings")
-                    .hide(settingsFragment)
-                    .add(R.id.fragment_container, statisticsFragment, "stats")
-                    .hide(statisticsFragment)
-                    .add(R.id.fragment_container, tasksFragment, "tasks")
-                    .hide(tasksFragment)
-                    .add(R.id.fragment_container, homeFragment, "home")
-                    .commit();
-
-            activeFragment = homeFragment;
-        } else {
-            homeFragment = getSupportFragmentManager().findFragmentByTag("home");
-            tasksFragment = getSupportFragmentManager().findFragmentByTag("tasks");
-            statisticsFragment = getSupportFragmentManager().findFragmentByTag("stats");
-            settingsFragment = getSupportFragmentManager().findFragmentByTag("settings");
-
-            if (homeFragment == null) {
-                homeFragment = new HomeFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .add(R.id.fragment_container, homeFragment, "home")
-                        .hide(homeFragment)
-                        .commitNow();
-            }
-            if (tasksFragment == null) {
-                tasksFragment = new TasksFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .add(R.id.fragment_container, tasksFragment, "tasks")
-                        .hide(tasksFragment)
-                        .commitNow();
-            }
-            if (statisticsFragment == null) {
-                statisticsFragment = new StatisticsFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .add(R.id.fragment_container, statisticsFragment, "stats")
-                        .hide(statisticsFragment)
-                        .commitNow();
-            }
-            if (settingsFragment == null) {
-                settingsFragment = new SettingsFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .add(R.id.fragment_container, settingsFragment, "settings")
-                        .hide(settingsFragment)
-                        .commitNow();
-            }
-
-            if (homeFragment != null && homeFragment.isVisible()) {
-                activeFragment = homeFragment;
-            } else if (tasksFragment != null && tasksFragment.isVisible()) {
-                activeFragment = tasksFragment;
-            } else if (statisticsFragment != null && statisticsFragment.isVisible()) {
-                activeFragment = statisticsFragment;
-            } else if (settingsFragment != null && settingsFragment.isVisible()) {
-                activeFragment = settingsFragment;
-            }
-        }
-
-        if (activeFragment == null) {
-            showFragment(homeFragment);
-            activeFragment = homeFragment;
-        }
-
-        if (activeFragment == homeFragment) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_home);
-        } else if (activeFragment == tasksFragment) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_tasks);
-        } else if (activeFragment == statisticsFragment) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_statistics);
-        } else if (activeFragment == settingsFragment) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_settings);
+              Fragment home = new HomeFragment();
+              activeFragment = home;
+              getSupportFragmentManager()
+                  .beginTransaction()
+                  .add(R.id.fragment_container, home, TAG_HOME)
+                  .commit();
+            } else {
+              activeFragment = getSupportFragmentManager().findFragmentByTag(TAG_HOME);
+              if (activeFragment == null) {
+                activeFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+              }
         }
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
+              String targetTag = null;
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_home) {
-                showFragment(homeFragment);
+                targetTag = TAG_HOME;
             } else if (itemId == R.id.nav_tasks) {
-                showFragment(tasksFragment);
+                targetTag = TAG_TASKS;
             } else if (itemId == R.id.nav_statistics) {
-                showFragment(statisticsFragment);
+                targetTag = TAG_STATS;
             } else if (itemId == R.id.nav_settings) {
-                showFragment(settingsFragment);
-            } else {
-                return false;
+                targetTag = TAG_SETTINGS;
             }
 
-            return true;
+              if (targetTag != null) {
+                switchToFragment(targetTag);
+                return true;
+            }
+            return false;
         });
     }
 
-    private void showFragment(Fragment fragment) {
-        if (fragment == null || activeFragment == fragment) {
-            if (fragment instanceof TabRefreshable) {
-                ((TabRefreshable) fragment).onTabSelected();
+          private void switchToFragment(String tag) {
+            FragmentManager fm = getSupportFragmentManager();
+            Fragment target = fm.findFragmentByTag(tag);
+
+            if (target == null) {
+              target = createFragment(tag);
             }
-            return;
-        }
+            if (target == null || target == activeFragment) {
+              if (activeFragment instanceof TabRefreshable) {
+                ((TabRefreshable) activeFragment).onTabSelected();
+              }
+              return;
+            }
 
-        if (activeFragment == null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .show(fragment)
-                    .commit();
-            activeFragment = fragment;
-            return;
-        }
+                    FragmentTransaction transaction = fm.beginTransaction();
+            if (activeFragment != null) {
+              transaction.hide(activeFragment);
+            }
+            if (target.isAdded()) {
+              transaction.show(target);
+            } else {
+              transaction.add(R.id.fragment_container, target, tag);
+            }
+            transaction.commit();
 
-        getSupportFragmentManager()
-                .beginTransaction()
-                .hide(activeFragment)
-                .show(fragment)
-                .commit();
+            activeFragment = target;
+            if (activeFragment instanceof TabRefreshable) {
+              ((TabRefreshable) activeFragment).onTabSelected();
+            }
+          }
 
-        activeFragment = fragment;
-
-        if (fragment instanceof TabRefreshable) {
-            ((TabRefreshable) fragment).onTabSelected();
-        }
-    }
+          private Fragment createFragment(String tag) {
+            switch (tag) {
+              case TAG_HOME:
+                return new HomeFragment();
+              case TAG_TASKS:
+                return new TasksFragment();
+              case TAG_STATS:
+                return new StatisticsFragment();
+              case TAG_SETTINGS:
+                return new SettingsFragment();
+              default:
+                return null;
+            }
+          }
 }

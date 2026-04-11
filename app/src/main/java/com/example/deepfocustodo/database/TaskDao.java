@@ -30,4 +30,10 @@ public interface TaskDao {
 
     @Query("SELECT COUNT(*) FROM tasks WHERE completed = 1")
     int getCompletedTaskCount();
+
+    @Query("SELECT * FROM tasks WHERE id = :taskId LIMIT 1")
+    Task getTaskById(int taskId);
+
+    @Query("UPDATE tasks SET completedSessions = completedSessions + 1, updatedAt = :updatedAt WHERE id = :taskId")
+    void incrementCompletedSessions(int taskId, long updatedAt);
 }
