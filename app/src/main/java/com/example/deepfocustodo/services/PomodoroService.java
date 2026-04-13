@@ -68,6 +68,7 @@ public class PomodoroService extends Service {
 	private long lastPersistElapsedMs;
 	private int lastBroadcastSecond = -1;
 	private int eventNotificationCounter;
+	private int currentMusicResId = -1;
 
 	private long focusTimeMs;
 	private long shortBreakTimeMs;
@@ -358,17 +359,23 @@ public class PomodoroService extends Service {
 			abandonMusicFocus();
 			return;
 		}
+		int selectedMusicResId = getSelectedMusicResId();
 		if (!requestMusicFocus()) {
 			return;
 		}
 		if (focusMediaPlayer != null) {
-			if (!focusMediaPlayer.isPlaying()) {
-				focusMediaPlayer.start();
+			if (currentMusicResId != selectedMusicResId) {
+				stopFocusMusic();
+			} else {
+				if (!focusMediaPlayer.isPlaying()) {
+					focusMediaPlayer.start();
+				}
+				return;
 			}
-			return;
 		}
 
-		focusMediaPlayer = MediaPlayer.create(this, R.raw.lofi);
+		focusMediaPlayer = MediaPlayer.create(this, selectedMusicResId);
+		currentMusicResId = selectedMusicResId;
 		if (focusMediaPlayer != null) {
 			focusMediaPlayer.setLooping(true);
 			focusMediaPlayer.setOnErrorListener((mp, what, extra) -> {
@@ -391,6 +398,7 @@ public class PomodoroService extends Service {
 			focusMediaPlayer.release();
 			focusMediaPlayer = null;
 		}
+		currentMusicResId = -1;
 		abandonMusicFocus();
 	}
 
@@ -594,6 +602,25 @@ public class PomodoroService extends Service {
 		long plannedMs = plannedMinutes * 60_000L;
 		long elapsedMs = Math.max(0L, plannedMs - Math.max(0L, timeLeftMs));
 		return (int) (elapsedMs / 60_000L);
+	}
+
+	private int getSelectedMusicResId() {
+		String playlistId = preferenceHelper.getSelectedPlaylistId();
+		if (playlistId == null) {
+			return R.raw.lofi1;
+		}
+
+		switch (playlistId) {
+			case "classical_focus":
+				return R.raw.lofi2;
+			case "nature_sounds":
+				return R.raw.lofi3;
+			case "ambient_study":
+				return R.raw.lofi4;
+			case "lofi_beats":
+			default:
+				return R.raw.lofi1;
+		}
 	}
 
 	@Override

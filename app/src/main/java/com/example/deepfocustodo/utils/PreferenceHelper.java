@@ -10,6 +10,7 @@ public class PreferenceHelper {
     private static final String KEY_BREAK_TIME = "break_time";
     private static final String KEY_LONG_BREAK_TIME = "long_break_time";
     private static final String KEY_MUSIC_ENABLED = "music_enabled";
+    private static final String KEY_SELECTED_PLAYLIST_ID = "selected_playlist_id";
     private static final String KEY_FOCUS_ACTIVE = "focus_active";
     private static final String KEY_SELECTED_TASK_ID = "selected_task_id";
     
@@ -54,6 +55,14 @@ public class PreferenceHelper {
 
     public boolean isMusicEnabled() {
         return sharedPreferences.getBoolean(KEY_MUSIC_ENABLED, false);
+    }
+
+    public void setSelectedPlaylistId(String playlistId) {
+        sharedPreferences.edit().putString(KEY_SELECTED_PLAYLIST_ID, playlistId).apply();
+    }
+
+    public String getSelectedPlaylistId() {
+        return sharedPreferences.getString(KEY_SELECTED_PLAYLIST_ID, "lofi_beats");
     }
 
     public void setFocusActive(boolean active) {

@@ -33,8 +33,13 @@ import com.example.deepfocustodo.utils.AppExecutors;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.example.deepfocustodo.utils.SessionManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
+
+import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class HomeFragment extends Fragment implements TabRefreshable {
 
@@ -50,8 +55,12 @@ public class HomeFragment extends Fragment implements TabRefreshable {
     private TextView tvMode;
     private TextView tvHomePoints;
     private TextView tvCurrentTaskName;
+    private TextView tvSelectedMusic;
+    private TextView tvTodaySessions;
+    private TextView tvFocusStreak;
     private RecyclerView recyclerTasks;
     private CardView cardSelectedTask;
+    private CircularProgressIndicator progressTimer;
 
     private AppDatabase db;
     private PreferenceHelper preferenceHelper;
@@ -106,6 +115,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
 
             updateTimerText();
             updateModeText();
+            updateTimerProgress();
             updateButtonStates();
         }
     };
@@ -157,6 +167,10 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         tvMode = view.findViewById(R.id.tvMode);
         tvHomePoints = view.findViewById(R.id.tvHomePoints);
         tvCurrentTaskName = view.findViewById(R.id.tvCurrentTaskName);
+        tvSelectedMusic = view.findViewById(R.id.tvSelectedMusic);
+        tvTodaySessions = view.findViewById(R.id.tvTodaySessions);
+        tvFocusStreak = view.findViewById(R.id.tvFocusStreak);
+        progressTimer = view.findViewById(R.id.progressTimer);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
         cardSelectedTask = view.findViewById(R.id.cardSelectedTask);
 
@@ -172,6 +186,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         loadHeaderInfo();
         updateTimerText();
         updateModeText();
+        updateTimerProgress();
         updateButtonStates();
 
         btnStart.setOnClickListener(v -> handleStartClick());
@@ -221,6 +236,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         loadStateFromService();
         updateTimerText();
         updateModeText();
+        updateTimerProgress();
         updateButtonStates();
     }
 
@@ -248,6 +264,7 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         loadHeaderInfo();
         updateTimerText();
         updateModeText();
+        updateTimerProgress();
         updateButtonStates();
     }
 
@@ -334,12 +351,18 @@ public class HomeFragment extends Fragment implements TabRefreshable {
             Integer totalPoints = db.focusSessionDao().getTotalPoints();
             Integer selectedTaskId = SessionManager.getSelectedTaskId(appContext);
             Task selectedTask = selectedTaskId != null ? db.taskDao().getTaskById(selectedTaskId) : null;
+            int sessionsToday = getCompletedSessionsToday();
+            int streakDays = getCurrentStreakDays();
+            String selectedMusicTitle = getSelectedMusicTitle(preferenceHelper.getSelectedPlaylistId());
 
             AppExecutors.mainThread(() -> {
                 if (!isAdded()) {
                     return;
                 }
                 tvHomePoints.setText(String.format(Locale.getDefault(), "Points: %d", totalPoints != null ? totalPoints : 0));
+                tvTodaySessions.setText(String.valueOf(sessionsToday));
+                tvFocusStreak.setText(String.format(Locale.getDefault(), "%d ngay", streakDays));
+                tvSelectedMusic.setText(selectedMusicTitle);
 
                 if (selectedTask != null && !selectedTask.isCompleted()) {
                     cardSelectedTask.setVisibility(android.view.View.VISIBLE);
@@ -373,6 +396,23 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
         tvTimer.setText(String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds));
+    }
+
+    private void updateTimerProgress() {
+        if (progressTimer == null) {
+            return;
+        }
+
+        long phaseDuration = isFocus ? focusTimeMs : getCurrentBreakTimeMs();
+        if (phaseDuration <= 0L) {
+            progressTimer.setProgress(0);
+            return;
+        }
+
+        long safeTimeLeft = Math.max(0L, Math.min(timeLeftMs, phaseDuration));
+        int progress = (int) ((safeTimeLeft * 1000L) / phaseDuration);
+        progressTimer.setMax(1000);
+        progressTimer.setProgress(progress);
     }
 
     private void updateModeText() {
@@ -415,6 +455,71 @@ public class HomeFragment extends Fragment implements TabRefreshable {
         btnPause.setVisibility(android.view.View.GONE);
         btnStop.setVisibility(android.view.View.GONE);
         btnStart.setEnabled(true);
+    }
+
+    private int getCompletedSessionsToday() {
+        Calendar start = Calendar.getInstance();
+        start.set(Calendar.HOUR_OF_DAY, 0);
+        start.set(Calendar.MINUTE, 0);
+        start.set(Calendar.SECOND, 0);
+        start.set(Calendar.MILLISECOND, 0);
+
+        Calendar end = (Calendar) start.clone();
+        end.add(Calendar.DAY_OF_YEAR, 1);
+        end.add(Calendar.MILLISECOND, -1);
+
+        return db.focusSessionDao().getCompletedSessionsCountInDay(start.getTimeInMillis(), end.getTimeInMillis());
+    }
+
+    private int getCurrentStreakDays() {
+        List<Long> startTimes = db.focusSessionDao().getCompletedSessionStartTimesUpTo(System.currentTimeMillis());
+        if (startTimes == null || startTimes.isEmpty()) {
+            return 0;
+        }
+
+        Set<Long> activeDays = new HashSet<>();
+        Calendar calendar = Calendar.getInstance();
+        for (Long startTime : startTimes) {
+            if (startTime == null) {
+                continue;
+            }
+            calendar.setTimeInMillis(startTime);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            activeDays.add(calendar.getTimeInMillis());
+        }
+
+        int streak = 0;
+        Calendar cursor = Calendar.getInstance();
+        cursor.set(Calendar.HOUR_OF_DAY, 0);
+        cursor.set(Calendar.MINUTE, 0);
+        cursor.set(Calendar.SECOND, 0);
+        cursor.set(Calendar.MILLISECOND, 0);
+
+        while (activeDays.contains(cursor.getTimeInMillis())) {
+            streak++;
+            cursor.add(Calendar.DAY_OF_YEAR, -1);
+        }
+        return streak;
+    }
+
+    private String getSelectedMusicTitle(@Nullable String playlistId) {
+        if (playlistId == null) {
+            return "Lo-Fi Beats";
+        }
+        switch (playlistId) {
+            case "classical_focus":
+                return "Classical Focus";
+            case "nature_sounds":
+                return "Nature Sounds";
+            case "ambient_study":
+                return "Ambient Study";
+            case "lofi_beats":
+            default:
+                return "Lo-Fi Beats";
+        }
     }
 
     private void requestNotificationPermissionIfNeeded() {

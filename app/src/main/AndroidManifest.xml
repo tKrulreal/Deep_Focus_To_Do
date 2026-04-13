@@ -32,6 +32,7 @@
             android:foregroundServiceType="dataSync|mediaPlayback" />
 
         <activity android:name=".activities.BlockedAppsActivity" />
+        <activity android:name=".activities.FocusMusicActivity" />
         <activity android:name=".activities.BlockPermissionActivity"/>
         <activity
             android:name=".activities.BlockPopupActivity"

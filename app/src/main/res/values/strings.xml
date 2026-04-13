@@ -6,4 +6,20 @@
     <string name="history_back">Quay lai</string>
     <string name="history_clear_all">Xoa toan bo lich su</string>
     <string name="history_empty_icon">Bieu tuong lich su trong</string>
+    <string name="focus_music_title">Focus Music</string>
+    <string name="focus_music_back">Quay lai</string>
+    <string name="focus_music_volume">Tat/bat am thanh</string>
+    <string name="focus_music_now_playing">Now Playing</string>
+    <string name="focus_music_default_track">Lo-Fi Beats</string>
+    <string name="focus_music_apply">Ap dung nhac da chon</string>
+    <string name="focus_music_track_counter">Track 12 of 42</string>
+    <string name="focus_music_track_time">1:24:16</string>
+    <string name="focus_music_available">Available Playlists</string>
+    <string name="focus_music_subtitle">Choose music to help you focus</string>
+    <string name="focus_music_play">Phat playlist</string>
+    <string name="focus_music_selected">Playlist da chon</string>
+    <string name="focus_music_play_preview">Phat thu nhac dang chon</string>
+    <string name="focus_music_pause_preview">Tam dung nhac dang phat</string>
+    <string name="focus_music_open">Mo man hinh chon nhac nen</string>
+    <string name="focus_music_button">Chon nhac nen</string>
 </resources>

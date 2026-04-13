@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.deepfocustodo.R;
 import com.example.deepfocustodo.activities.BlockedAppsActivity;
+import com.example.deepfocustodo.activities.FocusMusicActivity;
 import com.example.deepfocustodo.services.PomodoroService;
 import com.example.deepfocustodo.utils.PreferenceHelper;
 import com.google.android.material.textfield.TextInputEditText;
@@ -31,6 +32,7 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
     private SwitchCompat switchMusic;
     private Button btnSaveSettings;
     private Button btnOpenBlockedApps;
+    private Button btnOpenFocusMusic;
 
     private PreferenceHelper preferenceHelper;
 
@@ -55,6 +57,7 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
         switchMusic = view.findViewById(R.id.switchMusic);
         btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
         btnOpenBlockedApps = view.findViewById(R.id.btnOpenBlockedApps);
+        btnOpenFocusMusic = view.findViewById(R.id.btnOpenFocusMusic);
 
         preferenceHelper = new PreferenceHelper(requireContext());
 
@@ -62,6 +65,8 @@ public class SettingsFragment extends Fragment implements TabRefreshable {
         updateBlockedAppsButton();
 
         btnSaveSettings.setOnClickListener(v -> saveSettings());
+        btnOpenFocusMusic.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), FocusMusicActivity.class)));
 
         btnOpenBlockedApps.setOnClickListener(v -> {
 

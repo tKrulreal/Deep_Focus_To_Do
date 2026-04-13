@@ -136,11 +136,19 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOpenFocusMusic"
+            style="@style/Widget.DeepFocus.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:text="Chọn nhạc nền" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveSettings"
             style="@style/Widget.DeepFocus.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:text="Lưu cài đặt" />
 
         <com.google.android.material.button.MaterialButton
