@@ -615,14 +615,6 @@ public class StatisticsFragment extends Fragment implements TabRefreshable {
         });
     }
 
-    private String repeat(String token, int count) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < count; i++) {
-            builder.append(token);
-        }
-        return builder.toString();
-    }
-
     private void normalizeToStartOfDay(Calendar calendar) {
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
