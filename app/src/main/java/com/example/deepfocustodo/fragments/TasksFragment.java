@@ -11,6 +11,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -253,6 +255,7 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
 
     private void showTaskDialog(@Nullable Task taskToEdit) {
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_task, null);
+        TextInputLayout tilTitle = dialogView.findViewById(R.id.tilTaskTitle);
         EditText etTitle = dialogView.findViewById(R.id.etTaskTitle);
         EditText etDesc = dialogView.findViewById(R.id.etTaskDesc);
         MaterialButtonToggleGroup togglePriority = dialogView.findViewById(R.id.togglePriority);
@@ -263,7 +266,7 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
         npSessions.setMaxValue(10);
 
         if (taskToEdit != null) {
-            tvTitle.setText("Edit Task");
+            tvTitle.setText("Sửa Nhiệm vụ");
             etTitle.setText(taskToEdit.getTitle());
             etDesc.setText(taskToEdit.getDescription());
             npSessions.setValue(taskToEdit.getEstimatedSessions());
@@ -273,38 +276,47 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
             else togglePriority.check(R.id.btnLow);
         }
 
-        new AlertDialog.Builder(requireContext())
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setView(dialogView)
-                .setPositiveButton("Lưu", (dialog, which) -> {
-                    String title = etTitle.getText().toString().trim();
-                    String desc = etDesc.getText().toString().trim();
-                    int sessions = npSessions.getValue();
-                    int priority = 1;
-                    int checkedId = togglePriority.getCheckedButtonId();
-                    if (checkedId == R.id.btnHigh) priority = 3;
-                    else if (checkedId == R.id.btnMedium) priority = 2;
-
-                    if (!title.isEmpty()) {
-                        int finalPriority = priority;
-                        executor.execute(() -> {
-                            if (taskToEdit == null) {
-                                db.taskDao().insertTask(new Task(title, desc, false, System.currentTimeMillis(), finalPriority, sessions));
-                            } else {
-                                taskToEdit.setTitle(title);
-                                taskToEdit.setDescription(desc);
-                                taskToEdit.setPriority(finalPriority);
-                                taskToEdit.setEstimatedSessions(sessions);
-                                taskToEdit.setUpdatedAt(System.currentTimeMillis());
-                                db.taskDao().updateTask(taskToEdit);
-                            }
-                            if (getActivity() != null) getActivity().runOnUiThread(this::loadData);
-                        });
-                    } else {
-                        Toast.makeText(requireContext(), "Title required", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setPositiveButton("Lưu", null) // Set null to override later
                 .setNegativeButton("Hủy", null)
-                .show();
+                .create();
+
+        dialog.setOnShowListener(dialogInterface -> {
+            Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            button.setOnClickListener(view -> {
+                String title = etTitle.getText().toString().trim();
+                String desc = etDesc.getText().toString().trim();
+                int sessions = npSessions.getValue();
+                int priority = 1;
+                int checkedId = togglePriority.getCheckedButtonId();
+                if (checkedId == R.id.btnHigh) priority = 3;
+                else if (checkedId == R.id.btnMedium) priority = 2;
+
+                if (title.isEmpty()) {
+                    tilTitle.setError("Vui lòng nhập tên nhiệm vụ");
+                } else {
+                    tilTitle.setError(null);
+                    int finalPriority = priority;
+                    executor.execute(() -> {
+                        if (taskToEdit == null) {
+                            db.taskDao().insertTask(new Task(title, desc, false, System.currentTimeMillis(), finalPriority, sessions));
+                        } else {
+                            taskToEdit.setTitle(title);
+                            taskToEdit.setDescription(desc);
+                            taskToEdit.setPriority(finalPriority);
+                            taskToEdit.setEstimatedSessions(sessions);
+                            taskToEdit.setUpdatedAt(System.currentTimeMillis());
+                            db.taskDao().updateTask(taskToEdit);
+                        }
+                        if (getActivity() != null) getActivity().runOnUiThread(this::loadData);
+                    });
+                    dialog.dismiss();
+                }
+            });
+        });
+
+        dialog.show();
     }
 
     @Override
@@ -315,7 +327,13 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
             task.setUpdatedAt(now);
             task.setCompletedAt(isChecked ? now : 0L);
             db.taskDao().updateTask(task);
-            if (getActivity() != null) getActivity().runOnUiThread(this::loadData);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    loadData();
+                    String message = isChecked ? "Đã đánh dấu hoàn thành: " : "Đã bỏ đánh dấu hoàn thành: ";
+                    Toast.makeText(requireContext(), message + task.getTitle(), Toast.LENGTH_SHORT).show();
+                });
+            }
         });
     }
 
@@ -331,8 +349,8 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                     loadData();
                     View view = getView();
                     if (view != null) {
-                        Snackbar.make(view, "Task deleted", Snackbar.LENGTH_LONG)
-                                .setAction("UNDO", v -> {
+                        Snackbar.make(view, "Đã xóa nhiệm vụ", Snackbar.LENGTH_LONG)
+                                .setAction("HOÀN TÁC", v -> {
                                     executor.execute(() -> {
                                         db.taskDao().insertTask(task);
                                         if (isAdded() && getActivity() != null) {
@@ -354,17 +372,17 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     @Override
     public void onTaskLongClick(Task task) {
         if (task.isCompleted()) {
-            Toast.makeText(requireContext(), "Cannot select a completed task", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Không thể chọn nhiệm vụ đã hoàn thành", Toast.LENGTH_SHORT).show();
             return;
         }
 
         Integer selectedTaskId = SessionManager.getSelectedTaskId(requireContext());
         if (selectedTaskId != null && selectedTaskId.equals(task.getId())) {
             SessionManager.clearSelectedTask(requireContext());
-            Toast.makeText(requireContext(), "Task unselected", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Đã bỏ chọn nhiệm vụ", Toast.LENGTH_SHORT).show();
         } else {
             SessionManager.setSelectedTaskId(requireContext(), task.getId());
-            Toast.makeText(requireContext(), "Task selected for focus", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Đã chọn nhiệm vụ để tập trung", Toast.LENGTH_SHORT).show();
         }
         loadData();
     }
