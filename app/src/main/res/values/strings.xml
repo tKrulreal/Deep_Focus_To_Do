@@ -1,25 +1,26 @@
 <resources>
     <string name="app_name">Deep Focus To Do</string>
-    <string name="history_title">Lich su tap trung</string>
-    <string name="history_subtitle">Theo doi cac phien da hoan thanh</string>
-    <string name="history_empty">Chua co du lieu lich su</string>
-    <string name="history_back">Quay lai</string>
-    <string name="history_clear_all">Xoa toan bo lich su</string>
-    <string name="history_empty_icon">Bieu tuong lich su trong</string>
-    <string name="focus_music_title">Focus Music</string>
-    <string name="focus_music_back">Quay lai</string>
-    <string name="focus_music_volume">Tat/bat am thanh</string>
-    <string name="focus_music_now_playing">Now Playing</string>
+    <string name="history_title">Lịch sử tập trung</string>
+    <string name="history_subtitle">Theo dõi các phiên đã hoàn thành</string>
+    <string name="history_empty">Chưa có dữ liệu lịch sử</string>
+    <string name="history_back">Quay lại</string>
+    <string name="history_clear_all">Xóa toàn bộ lịch sử</string>
+    <string name="history_empty_icon">Biểu tượng lịch sử trống</string>
+
+    <string name="focus_music_title">Nhạc tập trung</string>
+    <string name="focus_music_back">Quay lại</string>
+    <string name="focus_music_volume">Bật/tắt âm thanh</string>
+    <string name="focus_music_now_playing">Đang phát</string>
     <string name="focus_music_default_track">Lo-Fi Beats</string>
-    <string name="focus_music_apply">Ap dung nhac da chon</string>
+    <string name="focus_music_apply">Áp dụng nhạc đã chọn</string>
     <string name="focus_music_track_counter">Track 12 of 42</string>
     <string name="focus_music_track_time">1:24:16</string>
-    <string name="focus_music_available">Available Playlists</string>
-    <string name="focus_music_subtitle">Choose music to help you focus</string>
-    <string name="focus_music_play">Phat playlist</string>
-    <string name="focus_music_selected">Playlist da chon</string>
-    <string name="focus_music_play_preview">Phat thu nhac dang chon</string>
-    <string name="focus_music_pause_preview">Tam dung nhac dang phat</string>
-    <string name="focus_music_open">Mo man hinh chon nhac nen</string>
-    <string name="focus_music_button">Chon nhac nen</string>
+    <string name="focus_music_available">Playlist có sẵn</string>
+    <string name="focus_music_subtitle">Chọn nhạc giúp bạn tập trung</string>
+    <string name="focus_music_play">Phát playlist</string>
+    <string name="focus_music_selected">Playlist đã chọn</string>
+    <string name="focus_music_play_preview">Phát thử nhạc đang chọn</string>
+    <string name="focus_music_pause_preview">Tạm dừng nhạc đang phát</string>
+    <string name="focus_music_open">Mở màn hình chọn nhạc nền</string>
+    <string name="focus_music_button">Chọn nhạc nền</string>
 </resources>
